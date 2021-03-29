@@ -4,12 +4,15 @@
 Availabel in: https://github.com/felipefr/micmacsFenics.git
 @author: Felipe Figueredo Rocha, f.rocha.felipe@gmail.com, felipe.figueredorocha@epfl.ch
 
-solves a bar problem
+Bar problem given a Macroscopic constitutive law:
+Problem in [0,Lx]x[0,Ly], homogeneous dirichlet on left and traction on the right.
+We use an isotropic linear material, given two lamé parameters.  
 """
 
 from dolfin import *
 import matplotlib.pyplot as plt
 from ufl import nabla_div
+from fenicsUtils import symgrad
 
 Lx = 1.0
 Ly = 0.2
@@ -38,7 +41,7 @@ ds = Measure('ds', domain=mesh, subdomain_data=boundary_markers)
 traction = Constant((0.0,ty ))
 
 def sigma(u):
-    return lamb*nabla_div(u)*Identity(2) + 0.5*mu*sym(nabla_grad(u))
+    return lamb*nabla_div(u)*Identity(2) + 2*mu*symgrad(u)
 
 # Define variational problem
 uh = TrialFunction(Uh) 
