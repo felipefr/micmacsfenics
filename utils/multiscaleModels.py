@@ -158,11 +158,11 @@ class MicroConstitutiveModel:
         self.x = df.SpatialCoordinate(self.mesh)               
         self.ndim = 2
         self.nvoigt = int(self.ndim*(self.ndim + 1)/2)  
-        self.Chom = df.Constant(tuple(self.nvoigt*[tuple(self.nvoigt*[0.0])]))
+        self.Chom_ = np.zeros((self.nvoigt,self.nvoigt))
+
+        self.getTangent = self.computeTangent # in the first run should compute 
         
-        self.getTangent()
-        
-    def getTangent(self):
+    def computeTangent(self):
         
         dy = df.Measure('dx',self.mesh)
         vol = df.assemble(df.Constant(1.0)*dy)
@@ -179,8 +179,7 @@ class MicroConstitutiveModel:
         
         solver = df.LUSolver(A) # decompose just once
         sol = mp.BlockFunction(W)
-            
-        Chom_ = np.zeros((self.nvoigt,self.nvoigt)) 
+             
         for i in range(self.nvoigt):
             
             Eps.assign(df.Constant(macro_strain(i)))    
@@ -194,15 +193,19 @@ class MicroConstitutiveModel:
             sig_mu = self.sigmaLaw(df.dot(Eps,y) + sol[0])
             sigma_hom =  Integral(sig_mu, dy, (2,2))/vol
 
-            Chom_[:,i] = sigma_hom.flatten()[[0,3,1]]
+            self.Chom_[:,i] = sigma_hom.flatten()[[0,3,1]]
             
         end = timer()
-        print('time in solving system', end - start) # Time in seconds, e.g. 5.38091952400282
+        print('time in solving system', end - start) # Time in seconds
         
-        self.Chom.assign(df.Constant(Chom_))
-        print(Chom_)
-        return Chom_
-    
+        print(self.Chom_)
+        
+        self.getTangent = self.getTangent_ # from the second run onwards, just returns  
+        
+        return self.Chom_
+               
+    def getTangent_(self):
+        return self.Chom_
     
     def solveStress(self,u):
-        return df.dot( self.Chom , symgrad_voigt(u))
+        return df.dot( df.Constant(self.getTangent()) , symgrad_voigt(u))

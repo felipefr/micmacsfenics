@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<Xdmf Version="3.0">
+  <Domain>
+    <Grid Name="mesh" GridType="Uniform">
+      <Topology NumberOfElements="60" TopologyType="Triangle" NodesPerElement="3">
+        <DataItem Dimensions="60 3" NumberType="UInt" Format="HDF">barMultiscale_2micro_single.h5:/Mesh/mesh/topology</DataItem>
+      </Topology>
+      <Geometry GeometryType="XY">
+        <DataItem Dimensions="44 2" Format="HDF">barMultiscale_2micro_single.h5:/Mesh/mesh/geometry</DataItem>
+      </Geometry>
+      <Attribute Name="f_313" AttributeType="Vector" Center="Node">
+        <DataItem Dimensions="44 3" Format="HDF">barMultiscale_2micro_single.h5:/VisualisationVector/0</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>
