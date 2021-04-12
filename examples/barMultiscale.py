@@ -21,10 +21,10 @@ import multiscaleModels as mscm
 from fenicsUtils import symgrad, symgrad_voigt
 import numpy as np
 
-r0 = 0.1
+r0 = 0.3
 r1 = 0.5
-Lx = 1.0
-Ly = 0.2
+Lx = 2.0
+Ly = 0.5
 Nx = 10
 Ny = 3
 
@@ -32,9 +32,9 @@ lamb_matrix = 1.0
 mu_matrix = 0.5
 NxMicro = NyMicro = 100
 LxMicro = LyMicro = 1.0
-contrast = 1.3
+contrast = 10.0
 
-ty = -1.0e-3
+ty = -0.01
 
 # defining the micro model
 Nballs = 4
@@ -59,7 +59,7 @@ mu = fac*mu_matrix
 
 meshMicro = RectangleMesh(Point(0.0, 0.0), Point(LxMicro, LyMicro), NxMicro, NyMicro, "right/left")
 
-microModel = mscm.MicroConstitutiveModel(meshMicro, [lamb,mu], 'lin')
+microModel = mscm.MicroConstitutiveModel(meshMicro, [lamb,mu], 'per')
 sigma_voigt = lambda w : microModel.solveStress(w) # in voigt notation
 
 # Create mesh and define function space
@@ -91,7 +91,16 @@ uh = Function(Uh)
 solve(a == b, uh, bcL)
 
 # Save solution in VTK format
-fileResults = XDMFFile("barMultiscale.xdmf")
+fileResults = XDMFFile("barMultiscale_per.xdmf")
 fileResults.write(uh)
 
+
+
+fac_h = project(fac, FunctionSpace(meshMicro, 'CG', 1))
+fac_h.rename("constrast", "label")
 plot(project(fac, FunctionSpace(meshMicro, 'CG', 1)))
+fileResults_2 = XDMFFile("microstructure.xdmf")
+fileResults_2.write(fac_h)
+
+
+print(uh(Point(2.0,0.0)))
