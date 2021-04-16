@@ -20,6 +20,10 @@ sys.path.insert(0, '../utils/')
 import multiscaleModels as mscm
 from fenicsUtils import symgrad, symgrad_voigt
 import numpy as np
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
 
 class myChom(UserExpression):
     def __init__(self, microModels,  **kwargs):
@@ -28,6 +32,7 @@ class myChom(UserExpression):
         super().__init__(**kwargs)
         
     def eval_cell(self, values, x, cell):    
+        print('cell, rank = ', cell.index, rank)
         values[:] = self.microModels[cell.index].getTangent().flatten()
         
     def value_shape(self):
@@ -59,11 +64,11 @@ r1 = 0.5
 Lx = 2.0
 Ly = 0.5
 Nx = 2
-Ny = 2
+Ny = 3
 
 lamb_matrix = 1.0
 mu_matrix = 0.5
-NxMicro = NyMicro = 10
+NxMicro = NyMicro = 100
 LxMicro = LyMicro = 1.0
 contrast = 10.0
 
@@ -85,7 +90,7 @@ rightBnd.mark(boundary_markers, 2)
 # defining the micro model
 nCells = mesh.num_cells()
 facs = [getFactorBalls(i) for i in range(nCells)]
-meshMicro = RectangleMesh(Point(0.0, 0.0), Point(LxMicro, LyMicro), NxMicro, NyMicro, "right/left")
+meshMicro = RectangleMesh(MPI.COMM_SELF, Point(0.0, 0.0), Point(LxMicro, LyMicro), NxMicro, NyMicro, "right/left") # the cell is owned by one process only
 Chom = myChom([mscm.MicroConstitutiveModel(meshMicro, [facs[i]*lamb_matrix,facs[i]*mu_matrix], 'per') for i in range(nCells)], degree = 0)
 
 # Define boundary condition
@@ -103,19 +108,19 @@ b = inner(traction,vh)*ds(2)
 
 # Compute solution
 uh = Function(Uh)
-solve(a == b, uh, bcL)
+solve(a == b, uh, bcs = bcL, solver_parameters={"linear_solver": "mumps"})
 
 # Save solution in VTK format
-fileResults = XDMFFile("barMultiscale_2micro_single.xdmf")
-fileResults.write(uh)
+# fileResults = XDMFFile("barMultiscale_2micro_single.xdmf")
+# fileResults.write(uh)
 
 
 
-fac_h = project(facs[0], FunctionSpace(meshMicro, 'CG', 1))
-fac_h.rename("constrast", "label")
-plot(project(facs[0], FunctionSpace(meshMicro, 'CG', 1)))
-fileResults_2 = XDMFFile("microstructure_2.xdmf")
-fileResults_2.write(fac_h)
+# fac_h = project(facs[0], FunctionSpace(meshMicro, 'CG', 1))
+# fac_h.rename("constrast", "label")
+# plot(project(facs[0], FunctionSpace(meshMicro, 'CG', 1)))
+# fileResults_2 = XDMFFile("microstructure_2.xdmf")
+# fileResults_2.write(fac_h)
 
 
 # print(uh(Point(2.0,0.0)))

@@ -13,7 +13,6 @@ from timeit import default_timer as timer
 from ufl import nabla_div
 from fenicsUtils import symgrad, Integral, symgrad_voigt
 
-
 def macro_strain(i):
     Eps_Voigt = np.zeros((3,))
     Eps_Voigt[i] = 1
@@ -136,9 +135,13 @@ class MultiscaleFormulationPeriodic(MultiscaleFormulation):
 class MultiscaleFormulationLin(MultiscaleFormulation):
     def bcs(self):
         onBoundary = df.CompiledSubDomain('on_boundary')
-        bc1 = mp.DirichletBC(self.W.sub(0), df.Constant((0.,0.)) , onBoundary)
+        uD = self.others['uD'] if 'uD' in self.others else df.Constant((0.,0.)) 
+        bc1 = mp.DirichletBC(self.W.sub(0), uD , onBoundary)
         return [mp.BlockDirichletBC([bc1])]
         
+listMultiscaleModels = {'MR' : MultiscaleFormulationMR, 
+                        'per': MultiscaleFormulationPeriodic,
+                        'lin': MultiscaleFormulationLin}
 
 class MicroConstitutiveModel:
     
@@ -148,13 +151,12 @@ class MicroConstitutiveModel:
         self.model = model
         self.coord_min = np.min(self.mesh.coordinates(), axis = 0)
         self.coord_max = np.max(self.mesh.coordinates(), axis = 0)
-        self.others = {'polyorder' : 1, 'x0': self.coord_min[0], 'x1': self.coord_max[0], 
-                                        'y0': self.coord_min[1], 'y1': self.coord_max[1]}
         
-        self.multiscaleModel = {'MR' : MultiscaleFormulationMR, 
-                                'per': MultiscaleFormulationPeriodic,
-                                'lin': MultiscaleFormulationLin}[model]
-        # self.multiscaleModel = formulationMultiscale_periodic
+        # it should be modified before computing tangent (if needed) 
+        self.others = {'polyorder' : 1, 'x0': self.coord_min[0], 'x1': self.coord_max[0], 
+                                        'y0': self.coord_min[1], 'y1': self.coord_max[1]} 
+        
+        self.multiscaleModel = listMultiscaleModels[model]
         self.x = df.SpatialCoordinate(self.mesh)               
         self.ndim = 2
         self.nvoigt = int(self.ndim*(self.ndim + 1)/2)  
@@ -177,17 +179,20 @@ class MicroConstitutiveModel:
         if(len(bcs) > 0): 
             bcs.apply(A)
         
-        solver = df.LUSolver(A) # decompose just once
+        solver = df.PETScLUSolver('superlu') # decompose just once (the faster for single process)
         sol = mp.BlockFunction(W)
-             
+        
+        end = timer()
+        print('time assembling system', end - start) # Time in seconds
+        
         for i in range(self.nvoigt):
-            
+            start = timer()     
             Eps.assign(df.Constant(macro_strain(i)))    
             F = mp.block_assemble(f)
             if(len(bcs) > 0):
                 bcs.apply(F)
         
-            solver.solve(sol.block_vector(), F)    
+            solver.solve(A,sol.block_vector(), F)    
             sol.block_vector().block_function().apply("to subfunctions")
             
             sig_mu = self.sigmaLaw(df.dot(Eps,y) + sol[0])
@@ -195,8 +200,8 @@ class MicroConstitutiveModel:
 
             self.Chom_[:,i] = sigma_hom.flatten()[[0,3,1]]
             
-        end = timer()
-        print('time in solving system', end - start) # Time in seconds
+            end = timer()
+            print('time in solving system', end - start) # Time in seconds
         
         print(self.Chom_)
         

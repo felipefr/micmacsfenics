@@ -8,16 +8,18 @@ Bar problem given a Macroscopic constitutive law:
 Problem in [0,Lx]x[0,Ly], homogeneous dirichlet on left and traction on the right.
 We use an isotropic linear material, given two lamé parameters.  
 """
-
+import sys, os
 from dolfin import *
+import numpy as np
+sys.path.insert(0,'../utils/')
 import matplotlib.pyplot as plt
 from ufl import nabla_div
 from fenicsUtils import symgrad
 
 Lx = 1.0
 Ly = 0.2
-Nx = 10
-Ny = 3
+Nx = 400
+Ny = 50
 
 lamb = 1.0
 mu = 0.5
@@ -51,7 +53,11 @@ b = inner(traction,vh)*ds(2)
 
 # Compute solution
 uh = Function(Uh)
-solve(a == b, uh, bcL)
+solve(a == b, uh, bcs = bcL, solver_parameters={"linear_solver": "superlu"}) # normally the best for single process
+# solve(a == b, uh, bcs = bcL, solver_parameters={"linear_solver": "mumps"}) # best for distributed 
+
+print(uh.vector().get_local()[:].shape)
+print(np.linalg.norm(uh.vector().get_local()[:]))
 
 # Save solution in VTK format
 fileResults = XDMFFile("barMacro.xdmf")
