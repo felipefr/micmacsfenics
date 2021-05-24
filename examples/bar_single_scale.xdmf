@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<Xdmf Version="3.0">
+  <Domain>
+    <Grid Name="mesh" GridType="Uniform">
+      <Topology NumberOfElements="10000" TopologyType="Triangle" NodesPerElement="3">
+        <DataItem Dimensions="10000 3" NumberType="UInt" Format="HDF">bar_single_scale.h5:/Mesh/mesh/topology</DataItem>
+      </Topology>
+      <Geometry GeometryType="XY">
+        <DataItem Dimensions="5151 2" Format="HDF">bar_single_scale.h5:/Mesh/mesh/geometry</DataItem>
+      </Geometry>
+      <Attribute Name="f_3840" AttributeType="Vector" Center="Node">
+        <DataItem Dimensions="5151 3" Format="HDF">bar_single_scale.h5:/VisualisationVector/0</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>

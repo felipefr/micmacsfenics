@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Availabel in: https://github.com/felipefr/micmacsFenics.git
+Available in: https://github.com/felipefr/micmacsFenics.git
 @author: Felipe Figueredo Rocha, f.rocha.felipe@gmail.com,
 felipe.figueredorocha@epfl.ch
 
-Bar problem given a Macroscopic constitutive law:
+Bar problem given a constitutive law (single-scale):
 Problem in [0,Lx]x[0,Ly], homogeneous dirichlet on left and traction on the
 right. We use an isotropic linear material, given two lamé parameters.
 """
@@ -16,14 +16,15 @@ from ufl import nabla_div
 sys.path.insert(0, '../core/')
 from fenicsUtils import symgrad
 
-Lx = 1.0
-Ly = 0.2
-Nx = 400
-Ny = 50
+Lx = 2.0
+Ly = 0.5
+Nx = int(sys.argv[1])
+Ny = int(sys.argv[2])
 
-lamb = 1.0
-mu = 0.5
-ty = -1.0e-3
+facAvg = 6.0  # roughly to approximate single scale to mulsticale results
+lamb = facAvg*1.0
+mu = facAvg*0.5
+ty = -0.01
 
 # Create mesh and define function space
 mesh = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(Lx, Ly),
@@ -62,9 +63,12 @@ uh = df.Function(Uh)
 df.solve(a == b, uh, bcs=bcL, solver_parameters={"linear_solver": "superlu"})
 
 
-print(uh.vector().get_local()[:].shape)
-print(np.linalg.norm(uh.vector().get_local()[:]))
+def test_norm():
+    # using Nx = 100 , Ny = 50
+    assert np.abs(np.linalg.norm(uh.vector().get_local()[:]) -
+                  5.285161122867508) < 1e-14
+
 
 # Save solution in VTK format
-fileResults = df.XDMFFile("barMacro.xdmf")
+fileResults = df.XDMFFile("bar_single_scale.xdmf")
 fileResults.write(uh)
