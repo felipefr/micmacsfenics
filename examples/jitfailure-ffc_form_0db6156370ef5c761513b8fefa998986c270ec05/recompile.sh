@@ -1,3 +1,0 @@
-#!/bin/bash
-# Execute this file to recompile locally
-/home/felipefr/anaconda3/envs/tf/bin/x86_64-conda_cos6-linux-gnu-c++ -Wall -shared -fPIC -std=c++11 -O2 -I/home/felipefr/anaconda3/envs/tf/include -I/home/felipefr/anaconda3/envs/tf/include/eigen3 -I/home/felipefr/anaconda3/envs/tf/.cache/dijitso/include ffc_form_0db6156370ef5c761513b8fefa998986c270ec05.cpp -L/home/felipefr/anaconda3/envs/tf/.cache/dijitso/lib -Wl,-rpath,/home/felipefr/anaconda3/envs/tf/.cache/dijitso/lib -ldijitso-ffc_element_dffab458f5330d49cee6450c0e698990c04016cd -ldijitso-ffc_element_5a6e58c52ad740db73f7969d0f458213c2cc2f9a -ldijitso-ffc_coordinate_mapping_e6b48bfd93cd59103fbcb0b524e220bd4de595a5 -olibdijitso-ffc_form_0db6156370ef5c761513b8fefa998986c270ec05.so
