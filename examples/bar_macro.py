@@ -13,7 +13,7 @@ import sys
 import dolfin as df
 import numpy as np
 from ufl import nabla_div
-sys.path.insert(0, '../utils/')
+sys.path.insert(0, '../core/')
 from fenicsUtils import symgrad
 
 Lx = 1.0

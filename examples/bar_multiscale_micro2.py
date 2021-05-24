@@ -8,24 +8,19 @@ felipe.figueredorocha@epfl.ch
 Bar problem given a Multiscale constitutive law:
 Problem in [0,Lx]x[0,Ly], homogeneous dirichlet on left
 and traction on the right.
-The constitutive law is given implicitly by solving a micro problem in each
-gauss point of micro-scale. (one per element todo: one per GP)
+The constitutive law is given implicitly by solving a micro problem
+in each gauss point of micro-scale. (one per element todo: one per GP)
 We can choose the kinematically constrained model to the micro problem:
-Linear, Periodic or Minimally Restricted
-Entry to constitutive law: Mesh (micro), Lamé parameters (variable in micro),
-Kinematical Model
+Linear, Periodic or Minimally Restricted Entry to constitutive law:
+Mesh (micro), Lamé parameters (variable in micro), Kinematical Model
 """
 
+import numpy as np
 import sys
 import dolfin as df
-import numpy as np
-from mpi4py import MPI
-sys.path.insert(0, '../utils/')
-import multiscaleModels as mscm
+sys.path.insert(0, '../core/')
+import micro_constitutive_model as mscm
 from fenicsUtils import symgrad_voigt
-
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
 
 
 class myChom(df.UserExpression):
@@ -34,7 +29,6 @@ class myChom(df.UserExpression):
         super().__init__(**kwargs)
 
     def eval_cell(self, values, x, cell):
-        print('cell, rank = ', cell.index, rank)
         values[:] = self.microModels[cell.index].getTangent().flatten()
 
     def value_shape(self):
@@ -70,7 +64,7 @@ r0 = 0.3
 r1 = 0.5
 Lx = 2.0
 Ly = 0.5
-Nx = 2
+Nx = 10
 Ny = 3
 
 lamb_matrix = 1.0
@@ -96,9 +90,8 @@ rightBnd.mark(boundary_markers, 2)
 
 # defining the micro model
 nCells = mesh.num_cells()
-meshMicro = df.RectangleMesh(MPI.COMM_SELF, df.Point(0.0, 0.0),
-                             df.Point(LxMicro, LyMicro), NxMicro, NyMicro,
-                             "right/left")
+meshMicro = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(LxMicro, LyMicro),
+                             NxMicro, NyMicro, "right/left")
 
 facs = [getFactorBalls(i) for i in range(nCells)]
 params = [[fac_i*lamb_matrix, fac_i*mu_matrix] for fac_i in facs]
@@ -122,3 +115,13 @@ b = df.inner(traction, vh)*ds(2)
 # Compute solution
 uh = df.Function(Uh)
 df.solve(a == b, uh, bcL)
+
+# Save solution in VTK format
+fileResults = df.XDMFFile("barMultiscale_2micro_single.xdmf")
+fileResults.write(uh)
+
+fac_h = df.project(facs[0], df.FunctionSpace(meshMicro, 'CG', 1))
+fac_h.rename("constrast", "label")
+df.plot(df.project(facs[0], df.FunctionSpace(meshMicro, 'CG', 1)))
+fileResults_2 = df.XDMFFile("microstructure_2.xdmf")
+fileResults_2.write(fac_h)

@@ -6,20 +6,19 @@ Availabel in: https://github.com/felipefr/micmacsFenics.git
 felipe.figueredorocha@epfl.ch
 
 Bar problem given a Multiscale constitutive law:
-Problem in [0,Lx]x[0,Ly], homogeneous dirichlet on left
-and traction on the right.
-The constitutive law is given implicitly by solving a micro problem
-in each gauss point of micro-scale. (one per element todo: one per GP)
-We can choose the kinematically constrained model to the micro problem:
-Linear, Periodic or Minimally Restricted Entry to constitutive law:
-Mesh (micro), Lamé parameters (variable in micro), Kinematical Model
+Problem in [0,Lx]x[0,Ly], homogeneous dirichlet on left and
+traction on the right. The constitutive law is given implicitly by solving a
+micro problem in each gauss point of micro-scale. (one per element todo:
+one per GP). We can choose the kinematically constrained model to the
+micro problem: Linear, Periodic or Minimally Restricted. Entry to constitutive
+law: Mesh (micro), Lamé parameters (variable in micro), Kinematical Model
 """
 
-import numpy as np
 import sys
 import dolfin as df
-sys.path.insert(0, '../utils/')
-import multiscaleModels as mscm
+import numpy as np
+sys.path.insert(0, '../core/')
+import micro_constitutive_model as mscm
 from fenicsUtils import symgrad_voigt
 
 
@@ -64,12 +63,12 @@ r0 = 0.3
 r1 = 0.5
 Lx = 2.0
 Ly = 0.5
-Nx = 10
-Ny = 3
+Nx = 2
+Ny = 2
 
 lamb_matrix = 1.0
 mu_matrix = 0.5
-NxMicro = NyMicro = 100
+NxMicro = NyMicro = 10
 LxMicro = LyMicro = 1.0
 contrast = 10.0
 

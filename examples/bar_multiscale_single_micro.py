@@ -19,8 +19,8 @@ Kinematical Model
 import sys
 import dolfin as df
 import numpy as np
-sys.path.insert(0, '../utils/')
-import multiscaleModels as mscm
+sys.path.insert(0, '../core/')
+import micro_constitutive_model as mscm
 from fenicsUtils import symgrad_voigt
 
 r0 = 0.3
