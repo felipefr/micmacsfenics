@@ -22,6 +22,8 @@ sys.path.insert(0, '../core/')
 import micro_constitutive_model as mscm
 from fenicsUtils import symgrad_voigt
 
+resultFolder = '../results/'
+
 
 class myChom(df.UserExpression):
     def __init__(self, microModels,  **kwargs):
@@ -75,6 +77,8 @@ contrast = 10.0
 
 ty = -0.01
 
+bndModel = sys.argv[4]
+
 # Create mesh and define function space
 mesh = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(Lx, Ly),
                         Nx, Ny, "right/left")
@@ -94,7 +98,7 @@ meshMicro = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(LxMicro, LyMicro),
 
 facs = [getFactorBalls(i) for i in range(nCells)]
 params = [[fac_i*lamb_matrix, fac_i*mu_matrix] for fac_i in facs]
-microModels = [mscm.MicroConstitutiveModel(meshMicro, pi, 'per')
+microModels = [mscm.MicroConstitutiveModel(meshMicro, pi, bndModel)
                for pi in params]
 
 Chom = myChom(microModels, degree=0)
@@ -116,8 +120,9 @@ uh = df.Function(Uh)
 df.solve(a == b, uh, bcL)
 
 # Save solution in VTK format
-fileResults = df.XDMFFile("bar_multiscale_standalone.xdmf")
-fileResults.write(uh)
+solFile =  resultFolder + "bar_multiscale_standalone_{0}.xdmf".format(bndModel)
+fileResults = df.XDMFFile(solFile)
+fileResults.write_checkpoint(uh, 'u', 0)
 
 # # plot microstructures
 # fac_h = df.project(facs[0], df.FunctionSpace(meshMicro, 'CG', 1))

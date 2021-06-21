@@ -16,15 +16,19 @@ technically very close to zero.
 
 
 import os
-import numpy as np
 from timeit import default_timer as timer
 import dolfin as df
+import numpy as np
 
+os.environ['MKL_THREADING_LAYER'] = 'GNU'
+
+resultFolder = '../results/'
 
 def test_bndModel():
 
-    Lx, Ly, Ny, Nx, NxyMicro = 0.5, 2.0, 12, 3, 50
-
+    Lx, Ly, Nx, Ny, NxyMicro = 2.0, 0.5, 12, 4, 50
+    singleScaleFile = resultFolder + "bar_single_scale.xdmf"
+    multiScaleFile = resultFolder + "bar_multiscale_standalone_%s.xdmf"
     start = timer()
     print("simulating single scale")
     os.system("python bar_single_scale.py %d %d" % (Nx, Ny))
@@ -48,7 +52,7 @@ def test_bndModel():
 
     uh0 = df.Function(Uh)
 
-    with df.XDMFFile("bar_single_scale.xdmf") as f:
+    with df.XDMFFile(resultFolder + "bar_single_scale.xdmf") as f:
         f.read_checkpoint(uh0, 'u')
 
     error = {}
@@ -56,23 +60,24 @@ def test_bndModel():
 
     for bndModel in ['per', 'lin', 'MR', 'lag']:
 
-        with df.XDMFFile("bar_multiscale_standalone_%s.xdmf" % bndModel) as f:
+        with df.XDMFFile(multiScaleFile % bndModel) as f:
             f.read_checkpoint(ehtemp, 'u')
 
         ehtemp.vector().set_local(ehtemp.vector().get_local()[:] -
                                   uh0.vector().get_local()[:])
 
         error[bndModel] = df.norm(ehtemp)
+        print(error[bndModel])
 
     assert np.abs(error['lin'] - error['lag']) < 1e-12
-    assert np.abs(error['per'] - 0.00458937125497013) < 1e-12
-    assert np.abs(error['lin'] - 0.0061056841749225176) < 1e-12
-    assert np.abs(error['MR'] - 0.0009530615548645162) < 1e-12
+    assert np.abs(error['per'] - 0.006319071443377064) < 1e-12
+    assert np.abs(error['lin'] - 0.007901978018038507) < 1e-12
+    assert np.abs(error['MR'] - 0.0011744201374588351) < 1e-12
 
 
 def test_parallel():
 
-    Lx, Ly, Ny, Nx, NxyMicro = 0.5, 2.0, 12, 3, 50
+    Lx, Ly, Ny, Nx, NxyMicro = 0.5, 2.0, 12, 5, 50
     bndModel = 'per'
     suffix = "%d %d %d %s > log_%s.txt" % (
         Nx, Ny, NxyMicro, bndModel, bndModel)
@@ -116,3 +121,6 @@ def test_parallel():
         error[nProc] = df.norm(ehtemp)
 
     assert np.max(np.array(list(error.values()))) < 1e-13
+
+
+test_bndModel()

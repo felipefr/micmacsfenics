@@ -16,12 +16,15 @@ from ufl import nabla_div
 sys.path.insert(0, '../core/')
 from fenicsUtils import symgrad
 
+resultFolder = '../results/'
+
+
 Lx = 2.0
 Ly = 0.5
 Nx = int(sys.argv[1])
 Ny = int(sys.argv[2])
 
-facAvg = 6.0  # roughly to approximate single scale to mulsticale results
+facAvg = 4.0  # roughly chosen to approx single scale to mulsticale results
 lamb = facAvg*1.0
 mu = facAvg*0.5
 ty = -0.01
@@ -62,13 +65,6 @@ uh = df.Function(Uh)
 # linear_solver ops: "superlu" or "mumps"
 df.solve(a == b, uh, bcs=bcL, solver_parameters={"linear_solver": "superlu"})
 
-
-def test_norm():
-    # using Nx = 100 , Ny = 50
-    assert np.abs(np.linalg.norm(uh.vector().get_local()[:]) -
-                  5.285161122867508) < 1e-14
-
-
 # Save solution in VTK format
-fileResults = df.XDMFFile("bar_single_scale.xdmf")
-fileResults.write(uh)
+fileResults = df.XDMFFile(resultFolder + "bar_single_scale.xdmf")
+fileResults.write_checkpoint(uh, 'u', 0)

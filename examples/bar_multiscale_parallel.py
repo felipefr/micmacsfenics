@@ -128,5 +128,6 @@ b = df.inner(traction, vh)*ds(2)
 uh = df.Function(Uh)
 df.solve(a == b, uh, bcL)
 
-fileResults = df.XDMFFile(comm, "bar_multiscale_parallel_%d.xdmf" % num_ranks)
-fileResults.write(uh)
+fileResults = df.XDMFFile(comm, "bar_multiscale_parallel_%s_np%d.xdmf" %
+                          (bndModel, num_ranks))
+fileResults.write_checkpoint(uh, 'u', 0)
