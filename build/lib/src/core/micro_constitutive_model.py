@@ -13,13 +13,13 @@ import dolfin as df
 from timeit import default_timer as timer
 from ufl import nabla_div
 
-from micmacsfenics.core.fenicsUtils import symgrad, Integral, symgrad_voigt, macro_strain
+from core.fenicsUtils import symgrad, Integral, symgrad_voigt, macro_strain
 
 
-from micmacsfenics.formulations.dirichlet_lagrange import FormulationDirichletLagrange
-from micmacsfenics.formulations.linear import FormulationLinear
-from micmacsfenics.formulations.periodic import FormulationPeriodic
-from micmacsfenics.formulations.minimally_constrained import FormulationMinimallyConstrained
+from formulations.dirichlet_lagrange import FormulationDirichletLagrange
+from formulations.linear import FormulationLinear
+from formulations.periodic import FormulationPeriodic
+from formulations.minimally_constrained import FormulationMinimallyConstrained
 
 listMultiscaleModels = {'MR': FormulationMinimallyConstrained,
                         'per': FormulationPeriodic,

@@ -1,0 +1,20 @@
+Metadata-Version: 1.1
+Name: micmacsfenics
+Version: 0.1
+Summary: Easy Fe2 using Fenics
+Home-page: https://github.com/felipefr/micmacsFenics
+Author: Felipe Rocha
+Author-email: f.rocha.felipe@gmail.com
+License: GNU Library or Lesser General Public License (LGPL)
+Description: Easy Fe2 using Fenics
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/StableIntended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)
+Classifier: Topic :: Scientific/Engineering :: Mathematics
+Classifier: Topic :: Software Development :: Libraries :: Python Modules

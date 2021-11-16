@@ -6,7 +6,9 @@ Created on Wed Mar 24 12:47:54 2021
 import sys
 import multiphenics as mp
 import dolfin as df
-from micmacsfenics.core.fenicsUtils import symgrad
+sys.path.insert(0, '../core/')
+from fenicsUtils import symgrad
+
 
 class MultiscaleFormulation:
 
