@@ -21,9 +21,14 @@ resultFolder = '../results/'
 
 Lx = 2.0
 Ly = 0.5
-Nx = int(sys.argv[1])
-Ny = int(sys.argv[2])
 
+if(len(sys.argv)>2):
+    Nx = int(sys.argv[1])
+    Ny = int(sys.argv[2])
+else:
+    Nx = 40
+    Ny = 10
+    
 facAvg = 4.0  # roughly chosen to approx single scale to mulsticale results
 lamb = facAvg*1.0
 mu = facAvg*0.5
