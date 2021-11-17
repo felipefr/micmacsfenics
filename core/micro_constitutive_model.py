@@ -24,7 +24,8 @@ from micmacsfenics.formulations.minimally_constrained import FormulationMinimall
 listMultiscaleModels = {'MR': FormulationMinimallyConstrained,
                         'per': FormulationPeriodic,
                         'lin': FormulationLinear,
-                        'lag': FormulationDirichletLagrange}
+                        'lag': FormulationDirichletLagrange, 
+                        'dnn': FormulationDirichletLagrange} # add now
 
 
 class MicroConstitutiveModel:
