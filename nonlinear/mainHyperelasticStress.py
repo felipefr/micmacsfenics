@@ -82,16 +82,19 @@ J  = df.det(F)
 # Define variational problem
 psi = (mu/2)*(Ic - 3) - mu*df.ln(J) + (lmbda/2)*(df.ln(J))**2
 
-Pi = psi*dx - df.inner(traction, uh)*ds
+F_var = df.variable(F)
+P=2*df.diff(psi,F_var)
 
-Res = df.derivative(Pi, uh, vh)
+# Pi = psi*dx - df.inner(traction, uh)*ds
+
+Res = df.inner(P, df.grad(vh))*dx - df.inner(traction, vh)*ds 
 Jac = df.derivative(Res, uh, duh)
 
 df.solve(Res == 0, uh, bcL, J=Jac,
-      form_compiler_parameters=ffc_options)
+       form_compiler_parameters=ffc_options)
 
 
 # Save solution in VTK format
-fileResults = df.XDMFFile(resultFolder + "bar_single_scale.xdmf")
+fileResults = df.XDMFFile(resultFolder + "bar_withStress.xdmf")
 fileResults.write_checkpoint(uh, 'u', 0)
 fileResults.close()
