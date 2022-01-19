@@ -1,0 +1,38 @@
+{
+library : {
+name   : "Behaviour";
+type   : SHARED_LIBRARY;
+prefix : "lib";
+suffix : "so";
+install_path : "";
+sources : {
+"IsotropicLinearHardeningPlasticity-generic.cxx",
+"IsotropicLinearHardeningPlasticity.cxx"
+};
+cppflags : {
+"$(shell tfel-config --cppflags --compiler-flags)"
+};
+include_directories : {
+"$(shell tfel-config --include-path)"
+};
+link_directories : {
+"$(shell tfel-config --library-path)"
+};
+link_libraries : {
+"$(shell tfel-config --library-dependency --material --mfront-profiling)"
+};
+epts : {
+"IsotropicLinearHardeningPlasticity_AxisymmetricalGeneralisedPlaneStrain",
+"IsotropicLinearHardeningPlasticity_Axisymmetrical",
+"IsotropicLinearHardeningPlasticity_PlaneStrain",
+"IsotropicLinearHardeningPlasticity_GeneralisedPlaneStrain",
+"IsotropicLinearHardeningPlasticity_Tridimensional"
+};
+};
+headers : {
+"MFront/GenericBehaviour/IsotropicLinearHardeningPlasticity-generic.hxx",
+"TFEL/Material/IsotropicLinearHardeningPlasticity.hxx",
+"TFEL/Material/IsotropicLinearHardeningPlasticityBehaviourData.hxx",
+"TFEL/Material/IsotropicLinearHardeningPlasticityIntegrationData.hxx"
+};
+};
