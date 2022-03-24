@@ -71,5 +71,10 @@ uh = df.Function(Uh)
 df.solve(a == b, uh, bcs=bcL, solver_parameters={"linear_solver": "superlu"})
 
 # Save solution in VTK format
-fileResults = df.XDMFFile(resultFolder + "bar_single_scale.xdmf")
-fileResults.write_checkpoint(uh, 'u', 0)
+# fileResults = df.XDMFFile(resultFolder + "bar_single_scale.xdmf")
+# fileResults.write_checkpoint(uh, 'u', 0)
+
+
+uh.rename("uh", ".")
+with df.XDMFFile(resultFolder + "bar_single_scale.xdmf") as f:
+    f.write(uh, 0.0)

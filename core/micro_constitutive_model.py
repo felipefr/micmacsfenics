@@ -73,7 +73,7 @@ class MicroConstitutiveModel:
             bcs.apply(A)
 
         # decompose just once (the faster for single process)
-        solver = df.PETScLUSolver('superlu')
+        solver = df.PETScLUSolver()
         sol = mp.BlockFunction(W)
 
         end = timer()
