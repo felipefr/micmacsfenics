@@ -1,25 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Availabel in: https://github.com/felipefr/micmacsFenics.git
-@author: Felipe Figueredo Rocha, f.rocha.felipe@gmail.com,
-felipe.figueredorocha@epfl.ch
+Created on Thu Mar 24 11:04:59 2022
 
-Bar problem given a Multiscale constitutive law (random microstructures):
-Problem in [0,Lx]x[0,Ly], homogeneous dirichlet on left and
-traction on the right. The constitutive law is given implicitly by solving a
-micro problem in each gauss point of micro-scale (one per element).
-We can choose the kinematically constrained model to the
-micro problem: Linear, Periodic or Minimally Restricted. Entry to constitutive
-law: Mesh (micro), Lamé parameters (variable in micro), Kinematical Model
-PS: This is a single core implementation.
+@author: felipe
 """
 
 import sys
 import dolfin as df
 import numpy as np
 sys.path.insert(0, '../../core/')
-import micro_constitutive_model as mscm
+from micmacsfenics.core.micro_constitutive_model_minimisation import MicroConstitutiveModelMinimisation
 from fenicsUtils import symgrad_voigt
 from functools import partial 
 
@@ -27,7 +18,7 @@ from functools import partial
 
 solver_parameters = {"nonlinear_solver": "newton",
                      "newton_solver": {"maximum_iterations": 20,
-                                       "report": True,
+                                       "report": False,
                                        "error_on_nonconvergence": True}}
 
 resultFolder = './results/'
@@ -82,10 +73,10 @@ Ny = 5
 NxMicro = NyMicro = 10 
 bndModel = 'lin' 
 
-createMesh = False
-
 name_meshmacro = 'meshmacro.xdmf'
 name_meshmicro = 'meshmicro.xdmf'
+
+createMesh = False
 
 r0 = 0.3
 r1 = 0.5
@@ -115,6 +106,7 @@ else:
         f.read(mesh)
 
 
+
 Uh = df.VectorFunctionSpace(mesh, "Lagrange", 1)
 
 leftBnd = df.CompiledSubDomain('near(x[0], 0.0) && on_boundary')
@@ -142,7 +134,7 @@ else:
 facs = [getFactorBalls(0) for i in range(nCells)]
 np.random.seed(0)
 params = [[fac_i*lamb_matrix, fac_i*mu_matrix] for fac_i in facs]
-microModels = [mscm.MicroConstitutiveModel(meshMicro, pi, bndModel)
+microModels = [MicroConstitutiveModelMinimisation(meshMicro, pi, bndModel)
                for pi in params]
 
 Chom = myChom(microModels, degree=0)
@@ -175,26 +167,21 @@ solver.parameters.update(solver_parameters)
 solver.solve()
 
 # Save solution in VTK format
-solFile =  resultFolder + "bar_multiscale_standalone_{0}.xdmf".format(bndModel)
+solFile =  resultFolder + "bar_multiscale_minimisation.xdmf".format(bndModel)
+
+
 uh.rename("uh", ".")
 with df.XDMFFile(solFile) as f:
     f.write(uh, 0.0)
-
-
-if(createMesh):
-    solFile =  resultFolder + "bar_multiscale_standalone_{0}_checkpoint.xdmf".format(bndModel)
-    uh.rename("uh", ".")
-    with df.XDMFFile(solFile) as f:
-        f.write_checkpoint(uh, 'u', 0)
-        
-else:    
-    uh_ref = df.Function(Uh)
-    solFile =  resultFolder + "bar_multiscale_standalone_{0}_checkpoint.xdmf".format(bndModel)
     
-    with df.XDMFFile(solFile) as f:
-        f.read_checkpoint(uh_ref, 'u')
+    
+uh_ref = df.Function(Uh)
+solFile =  resultFolder + "bar_multiscale_standalone_{0}_checkpoint.xdmf".format(bndModel)
 
-error = df.assemble( df.inner( uh_ref - uh, uh_ref - uh)*df.dx)
+with df.XDMFFile(solFile) as f:
+    f.read_checkpoint(uh_ref, 'u')
+
+error = np.sqrt(df.assemble( df.inner( uh_ref - uh, uh_ref - uh)*df.dx))
 print(" difference: %f"%error)
 
 # # plot microstructures

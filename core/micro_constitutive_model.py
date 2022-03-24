@@ -82,10 +82,7 @@ class MicroConstitutiveModel:
         for i in range(self.nvoigt):
             start = timer()
             
-            if(i<2):
-                Eps.assign(df.Constant(macro_strain(i)))
-            else:
-                Eps.assign(df.Constant(macro_strain(i)))
+            Eps.assign(df.Constant(macro_strain(i)))
             
             F = mp.block_assemble(f)
             if(len(bcs) > 0):
@@ -105,6 +102,8 @@ class MicroConstitutiveModel:
         # from the second run onwards, just returns
         self.getTangent = self.getTangent_
 
+        # print(self.Chom_)
+        # input()
         return self.Chom_
 
     def getTangent_(self):
