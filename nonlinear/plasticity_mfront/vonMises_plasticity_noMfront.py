@@ -357,11 +357,11 @@ for (i, t) in enumerate(load_steps):
     file_results.write(p_avg, t)
     results[i+1, :] = (u(Ri, 0)[0], t)
 
-import matplotlib.pyplot as plt
-plt.plot(results[:, 0], results[:, 1], "-o")
-plt.xlabel("Displacement of inner boundary")
-plt.ylabel(r"Applied pressure $q/q_{lim}$")
-plt.show()
+# import matplotlib.pyplot as plt
+# plt.plot(results[:, 0], results[:, 1], "-o")
+# plt.xlabel("Displacement of inner boundary")
+# plt.ylabel(r"Applied pressure $q/q_{lim}$")
+# plt.show()
 
 # The load-displacement curve looks as follows:
 #

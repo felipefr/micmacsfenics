@@ -11,7 +11,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/0/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.23452078799117149" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/0</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -26,7 +26,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/2/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.33166247903554003" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/2</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -41,7 +41,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/4/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.40620192023179807" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/4</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -56,7 +56,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/6/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.46904157598234297" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/6</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -71,7 +71,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/8/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.52440442408507582" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/8</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -86,7 +86,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/10/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.57445626465380295" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/10</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -101,7 +101,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/12/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.62048368229954287" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/12</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -116,7 +116,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/14/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.66332495807108005" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/14</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -131,7 +131,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/16/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.70356236397351446" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/16</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -146,7 +146,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/18/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.74161984870956632" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/18</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -161,7 +161,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/20/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.7778174593052023" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/20</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -176,7 +176,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/22/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.81240384046359615" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/22</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -191,7 +191,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/24/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.84557672626438818" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/24</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -206,7 +206,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/26/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.87749643873921224" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/26</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -221,7 +221,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/28/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.90829510622924758" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/28</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -236,7 +236,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/30/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.93808315196468595" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/30</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -251,7 +251,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/32/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.96695398029068591" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/32</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -266,7 +266,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/34/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="0.99498743710661997" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/34</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -281,7 +281,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/36/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="1.0222524150130436" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/36</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">
@@ -296,7 +296,7 @@
           <DataItem Dimensions="854 2" Format="HDF">plasticity_results.h5:/Mesh/38/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="1.0488088481701516" />
-        <Attribute Name="Displacement at the beginning of the time step" AttributeType="Vector" Center="Node">
+        <Attribute Name="Total displacement" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="854 3" Format="HDF">plasticity_results.h5:/VisualisationVector/38</DataItem>
         </Attribute>
         <Attribute Name="Plastic strain" AttributeType="Scalar" Center="Cell">

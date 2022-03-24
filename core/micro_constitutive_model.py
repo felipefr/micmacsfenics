@@ -43,7 +43,7 @@ class MicroConstitutiveModel:
 
         # it should be modified before computing tangent (if needed)
         self.others = {
-            'polyorder': 1,
+            'polyorder': 2,
             'x0': self.coord_min[0], 'x1': self.coord_max[0],
             'y0': self.coord_min[1], 'y1': self.coord_max[1]
             }
@@ -81,7 +81,12 @@ class MicroConstitutiveModel:
 
         for i in range(self.nvoigt):
             start = timer()
-            Eps.assign(df.Constant(macro_strain(i)))
+            
+            if(i<2):
+                Eps.assign(df.Constant(macro_strain(i)))
+            else:
+                Eps.assign(df.Constant(macro_strain(i)))
+            
             F = mp.block_assemble(f)
             if(len(bcs) > 0):
                 bcs.apply(F)
@@ -96,8 +101,6 @@ class MicroConstitutiveModel:
 
             end = timer()
             print('time in solving system', end - start)
-
-        print(self.Chom_)
 
         # from the second run onwards, just returns
         self.getTangent = self.getTangent_
