@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Thu Mar 24 21:30:58 2022
+
+@author: felipe
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Available in: https://github.com/felipefr/micmacsFenics.git
 @author: Felipe Figueredo Rocha, f.rocha.felipe@gmail.com,
 felipe.figueredorocha@epfl.ch
@@ -12,9 +20,9 @@ right. We use an isotropic linear material, given two lamé parameters.
 import sys
 import dolfin as df
 import numpy as np
-from ufl import nabla_div, indices
+from ufl import nabla_div
 sys.path.insert(0, '../core/')
-from fenicsUtils import symgrad
+from fenicsUtils import symgrad_voigt, symgrad, voigt2strain
 
 
 # Optimization options for the form compiler
@@ -71,27 +79,23 @@ vh  = df.TestFunction(Uh)             # Test function
 uh  = df.Function(Uh)                 # Displacement from previous iteration
 
 # Kinematics
-I = df.Identity(2)    # Identity tensor
-F = I + df.grad(uh)             # Deformation gradient
-C = F.T*F                   # Right Cauchy-Green tensor
-
-# Invariants of deformation tensors
-Ic = df.tr(C)
-J  = df.det(F)
+eps = symgrad_voigt(uh)
+tr_eps = eps[0] + eps[1]
+eps2  = eps[0]**2 + eps[1]**2 + 0.5*eps[2]**2
 
 # Define variational problem
-psi = (mu/2)*(Ic - 3) - mu*df.ln(J) + (lmbda/2)*(df.ln(J))**2
+psi = 0.5*lmbda*tr_eps**2  + mu*eps2
 
-F_var = df.variable(F)
-P=df.diff(psi,F_var)
-A=df.diff(P, F_var)
+eps_var = df.variable(eps)
+sigma = df.diff(psi,eps_var)
+Celas = df.diff(sigma, eps_var)
 
 # Pi = psi*dx - df.inner(traction, uh)*ds
 
-i,j,k,l = indices(4)
-Res = -df.inner(P, df.grad(vh))*dx + df.inner(traction, vh)*ds 
-Jac = df.inner(df.as_tensor(A[i,j,k,l]*duh[k].dx(l), (i,j)), df.grad(vh))*dx
+Res = -df.inner(sigma, symgrad_voigt(vh))*dx + df.inner(traction, vh)*ds 
+Jac = df.inner(Celas*symgrad_voigt(duh), symgrad_voigt(vh))*dx
 
+# duh = df.Function(uh)
 duh = df.Function(Uh)
 
 df.solve(Jac == Res, duh, bcL)

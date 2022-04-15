@@ -1,17 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Mar 24 11:06:25 2022
+Created on Thu Mar 24 20:33:32 2022
 
 @author: felipe
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May 24 20:52:32 2021
-
-@author: felipefr
 """
 
 import sys
@@ -22,7 +14,9 @@ from timeit import default_timer as timer
 from ufl import nabla_div
 from functools import partial 
 
+
 from micmacsfenics.core.fenicsUtils import symgrad, Integral, symgrad_voigt, macro_strain
+
 
 from micmacsfenics.formulations.dirichlet_lagrange import FormulationDirichletLagrange
 from micmacsfenics.formulations.linear import FormulationLinear
@@ -30,7 +24,6 @@ from micmacsfenics.formulations.periodic import FormulationPeriodic
 from micmacsfenics.formulations.minimally_constrained import FormulationMinimallyConstrained
 
 from micmacsfenics.core.micro_constitutive_model import MicroConstitutiveModel
-
 
 solver_parameters = {"nonlinear_solver": "newton",
                      "newton_solver": {"maximum_iterations": 20,
@@ -54,7 +47,7 @@ def getSigma(u, param): # linear elastic one
     
     return (lamb*tr_e*df.Identity(2) + 2.0*mu*e)
 
-class MicroConstitutiveModelMinimisation(MicroConstitutiveModel):
+class MicroConstitutiveModelEps(MicroConstitutiveModel):
 
     def __init__(self, mesh, lame, model):
         super().__init__(mesh, lame, model)
@@ -66,7 +59,7 @@ class MicroConstitutiveModelMinimisation(MicroConstitutiveModel):
         self.Uh = df.VectorFunctionSpace(self.mesh, "CG", self.others['polyorder'])     
         self.bcD = df.DirichletBC(self.Uh, df.Constant((0, 0)), self.onBoundary)   
         
-    def computeTangent(self):
+    def computeTangent(self, epsMacro):
         
         # print("index" , epsMacro)
         
@@ -103,9 +96,9 @@ class MicroConstitutiveModelMinimisation(MicroConstitutiveModel):
 
             end = timer()
             print('time in solving system', end - start)
-
+            
         # from the second run onwards, just returns
-        self.getTangent = self.getTangent_
+        # self.getTangent = self.getTangent_
 
         # print(self.Chom_)
         # input()

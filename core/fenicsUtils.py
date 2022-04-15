@@ -30,6 +30,8 @@ def stress2Voigt(s):
 def strain2Voigt(e):
     return df.as_vector([e[0, 0], e[1, 1], 2*e[0, 1]])
 
+def voigt2strain(e):
+    return df.as_tensor([[e[0], 0.5*e[2]], [0.5*e[2], e[1]]])
 
 def Integral(u, dx, shape):
     n = len(shape)

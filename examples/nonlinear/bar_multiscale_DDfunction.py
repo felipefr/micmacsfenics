@@ -1,33 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Availabel in: https://github.com/felipefr/micmacsFenics.git
-@author: Felipe Figueredo Rocha, f.rocha.felipe@gmail.com,
-felipe.figueredorocha@epfl.ch
+Created on Thu Mar 24 11:04:59 2022
 
-Bar problem given a Multiscale constitutive law (random microstructures):
-Problem in [0,Lx]x[0,Ly], homogeneous dirichlet on left and
-traction on the right. The constitutive law is given implicitly by solving a
-micro problem in each gauss point of micro-scale (one per element).
-We can choose the kinematically constrained model to the
-micro problem: Linear, Periodic or Minimally Restricted. Entry to constitutive
-law: Mesh (micro), Lamé parameters (variable in micro), Kinematical Model
-PS: This is a single core implementation.
+@author: felipe
 """
 
 import sys
 import dolfin as df
 import numpy as np
 sys.path.insert(0, '../../core/')
-import micro_constitutive_model as mscm
+from micmacsfenics.core.micro_constitutive_model_eps import MicroConstitutiveModelEps
 from fenicsUtils import symgrad_voigt
 from functools import partial 
+
+from ddfunction import DDFunction
 
 
 
 solver_parameters = {"nonlinear_solver": "newton",
                      "newton_solver": {"maximum_iterations": 20,
-                                       "report": True,
+                                       "report": False,
                                        "error_on_nonconvergence": True}}
 
 resultFolder = './results/'
@@ -43,10 +36,21 @@ def getPsi(u, param): # linear elastic one
 class myChom(df.UserExpression):
     def __init__(self, microModels,  **kwargs):
         self.microModels = microModels
+        self.eps_data = 0.0
         super().__init__(**kwargs)
+        
+    def setMacrodeformation(self, eps,u):
+        self.eps = eps
+        self.u = u
 
+    def updateMacrodeformation(self):
+        self.eps.update(symgrad_voigt(self.u))
+        self.eps_data = self.eps.data()
+        
+        
     def eval_cell(self, values, x, cell):
-        values[:] = self.microModels[cell.index].getTangent().flatten()
+        self.updateMacrodeformation()
+        values[:] = self.microModels[cell.index].getTangent(self.eps_data[cell.index]).flatten()
 
     def value_shape(self):
         return (3, 3,)
@@ -64,7 +68,7 @@ def getFactorBalls(seed=1):
     np.random.seed(seed)
     ellipseData[:, 2] = r0 + np.random.rand(Nballs)*(r1 - r0)
 
-    fac = df.Expression('1.0', degree=2)  # ground substance
+    fac = df.Expression('1.0', degree=0)  # ground substance
     radiusThreshold = 0.01
 
     str_fac = 'A*exp(-a*((x[0] - x0)*(x[0] - x0) + (x[1] - y0)*(x[1] - y0) ))'
@@ -72,20 +76,20 @@ def getFactorBalls(seed=1):
     for xi, yi, ri in ellipseData[:, 0:3]:
         fac = fac + df.Expression(str_fac, A=contrast - 1.0,
                                   a=- np.log(radiusThreshold)/ri**2,
-                                  x0=xi, y0=yi, degree=2)
+                                  x0=xi, y0=yi, degree=0)
 
     return fac
 
 
 Nx = 2
 Ny = 2
-NxMicro = NyMicro = 10 
+NxMicro = NyMicro = 5
 bndModel = 'lin' 
-
-createMesh = False
 
 name_meshmacro = 'meshmacro.xdmf'
 name_meshmicro = 'meshmicro.xdmf'
+
+createMesh = False
 
 r0 = 0.3
 r1 = 0.5
@@ -115,6 +119,7 @@ else:
         f.read(mesh)
 
 
+
 Uh = df.VectorFunctionSpace(mesh, "Lagrange", 1)
 
 leftBnd = df.CompiledSubDomain('near(x[0], 0.0) && on_boundary')
@@ -142,7 +147,7 @@ else:
 facs = [getFactorBalls(0) for i in range(nCells)]
 np.random.seed(0)
 params = [[fac_i*lamb_matrix, fac_i*mu_matrix] for fac_i in facs]
-microModels = [mscm.MicroConstitutiveModel(meshMicro, pi, bndModel)
+microModels = [MicroConstitutiveModelEps(meshMicro, pi, bndModel)
                for pi in params]
 
 Chom = myChom(microModels, degree=0)
@@ -161,6 +166,13 @@ vh  = df.TestFunction(Uh)             # Test function
 uh  = df.Function(Uh)                 # Displacement from previous iteration
 
 
+Sh0 = df.VectorFunctionSpace(mesh, 'DG', degree = 0 , dim = 3) # for stress
+eps = DDFunction(Sh0)
+
+Chom.setMacrodeformation(eps, uh)
+Chom.updateMacrodeformation()
+
+
 param = [Chom]
 psi_law = partial(getPsi, param = param)
 
@@ -170,32 +182,31 @@ F = df.derivative(Pi, uh, vh)
 J = df.derivative(F, uh, duh)
 
 problem = df.NonlinearVariationalProblem(F, uh, bcL, J)
+
 solver = df.NonlinearVariationalSolver(problem)
 solver.parameters.update(solver_parameters)
 solver.solve()
 
+
+
+
 # Save solution in VTK format
-solFile =  resultFolder + "bar_multiscale_standalone_{0}.xdmf".format(bndModel)
+solFile =  resultFolder + "bar_multiscale_minimisation.xdmf".format(bndModel)
+
+
 uh.rename("uh", ".")
 with df.XDMFFile(solFile) as f:
     f.write(uh, 0.0)
-
-
-if(createMesh):
-    solFile =  resultFolder + "bar_multiscale_standalone_{0}_checkpoint.xdmf".format(bndModel)
-    uh.rename("uh", ".")
-    with df.XDMFFile(solFile) as f:
-        f.write_checkpoint(uh, 'u', 0)
-        
-else:    
-    uh_ref = df.Function(Uh)
-    solFile =  resultFolder + "bar_multiscale_standalone_{0}_checkpoint.xdmf".format(bndModel)
     
-    with df.XDMFFile(solFile) as f:
-        f.read_checkpoint(uh_ref, 'u')
+    
+uh_ref = df.Function(Uh)
+solFile =  resultFolder + "bar_multiscale_standalone_{0}_checkpoint.xdmf".format(bndModel)
 
-    error = df.assemble( df.inner( uh_ref - uh, uh_ref - uh)*df.dx)
-    print(" difference: %f"%error)
+with df.XDMFFile(solFile) as f:
+    f.read_checkpoint(uh_ref, 'u')
+
+error = np.sqrt(df.assemble( df.inner( uh_ref - uh, uh_ref - uh)*df.dx))
+print(" difference: %f"%error)
 
 # # plot microstructures
 # fac_h = df.project(facs[0], df.FunctionSpace(meshMicro, 'CG', 1))
