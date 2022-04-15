@@ -8,6 +8,8 @@ from ddfenics.fenics.enriched_mesh import EnrichedMesh
 import ddfenics.mechanics.misc as mech
 
 from functools import partial 
+from timeit import default_timer as timer
+
 
 df.parameters["form_compiler"]["cpp_optimize"] = True
 ffc_options = {"optimize": True, \
@@ -18,6 +20,8 @@ ffc_options = {"optimize": True, \
 def solve_cook(meshfile, psi):
 
     mesh = EnrichedMesh(meshfile)
+    
+    start = timer()
 
     Uh = df.VectorFunctionSpace(mesh, "CG", 1)
     clampedBndFlag = 2 
@@ -42,6 +46,9 @@ def solve_cook(meshfile, psi):
     
     # Compute solution
     df.solve(F==0, uh, bcL, J = J)
+    
+    end = timer()
+    print(end - start)
     
     
     return uh
