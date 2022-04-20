@@ -22,30 +22,17 @@ solver_parameters = {"nonlinear_solver": "newton",
                                        "report": True,
                                        "error_on_nonconvergence": True}}
 
-
 resultFolder = './results/'
 
-
-
-# def getPsi(u, param):
-#     lamb, mu, alpha = param
-    
-#     e = symgrad(u)
-#     tr_e = df.tr(e)
-#     e2 = df.inner(e,e)
-    
-#     return (0.5*lamb*(tr_e**2 + 0.5*alpha*tr_e**4) +
-#            mu*(e2 + 0.5*alpha*e2**2))
-
-
-def getPsi(u, param): # linear elastic one
-    lamb, mu = param
+def getPsi(u, param):
+    lamb, mu, alpha = param
     
     e = symgrad(u)
     tr_e = df.tr(e)
     e2 = df.inner(e,e)
     
-    return (0.5*lamb*(tr_e**2) + mu*(e2))
+    return (0.5*lamb*(tr_e**2 + 0.5*alpha*tr_e**4) +
+            mu*(e2 + 0.5*alpha*e2**2))
 
 
 Lx = 2.0
@@ -55,12 +42,13 @@ if(len(sys.argv)>2):
     Nx = int(sys.argv[1])
     Ny = int(sys.argv[2])
 else:
-    Nx = 40
-    Ny = 10
+    Nx = 6  
+    Ny = 3
     
 facAvg = 4.0  # roughly chosen to approx single scale to mulsticale results
 lamb = facAvg*1.0
 mu = facAvg*0.5
+alpha = 1.0
 ty = -0.01
 
 # Create mesh and define function space
@@ -82,7 +70,7 @@ bcL = df.DirichletBC(Uh, df.Constant((0.0, 0.0)), boundary_markers, 1)
 ds = df.Measure('ds', domain=mesh, subdomain_data=boundary_markers)
 traction = df.Constant((0.0, ty))
 
-param = [lamb, mu]
+param = [lamb, mu, alpha]
 psi_law = partial(getPsi, param = param)
 
 # Define variational problem

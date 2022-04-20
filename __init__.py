@@ -8,5 +8,6 @@ __all__ = [
     'linear',  
     'minimally_constrained', 
     'multiscale_formulation', 
-    'periodic'    
+    'periodic',
+    'materials'    
 ]
