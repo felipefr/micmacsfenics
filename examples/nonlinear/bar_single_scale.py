@@ -42,13 +42,13 @@ if(len(sys.argv)>2):
     Nx = int(sys.argv[1])
     Ny = int(sys.argv[2])
 else:
-    Nx = 6  
-    Ny = 3
+    Nx = 2  
+    Ny = 2
     
-facAvg = 4.0  # roughly chosen to approx single scale to mulsticale results
+facAvg = 1.0  # roughly chosen to approx single scale to mulsticale results
 lamb = facAvg*1.0
 mu = facAvg*0.5
-alpha = 1.0
+alpha = 0.0
 ty = -0.01
 
 # Create mesh and define function space
@@ -93,5 +93,8 @@ solver.solve()
 # fileResults.write_checkpoint(uh, 'u', 0)
 
 uh.rename("uh", ".")
-with df.XDMFFile(resultFolder + "bar_single_scale.xdmf") as f:
+with df.XDMFFile("bar_single_scale.xdmf") as f:
     f.write(uh, 0.0)
+
+
+A = df.assemble(J)

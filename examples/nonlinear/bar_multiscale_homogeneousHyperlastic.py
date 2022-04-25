@@ -8,20 +8,17 @@ Created on Tue Apr 19 14:24:12 2022
 
 import sys
 import dolfin as df
-import matplotlib.pyplot as plt
+
 import numpy as np
 
 sys.path.insert(0, '../../core/')
 sys.path.insert(0, '../../materials/')
 
+from micmacsfenics.core.micro_constitutive_model_nonlinear import MicroConstitutiveModelNonlinear
 
-from fenicsUtils import symgrad, tensor2mandel,  mandel2tensor, tr_mandel, Id_mandel_df, Id_mandel_np
-from hyperlastic_model import hyperlasticityModel
-from homogenised_model import homogenisedModel, homogenisedHyperlasticityModel
-
+from micmacsfenics.core.fenicsUtils import symgrad, tensor2mandel
+from multiscale_model_expression import multiscaleModelExpression
 from timeit import default_timer as timer
-
-from functools import partial 
 
 df.parameters["form_compiler"]["representation"] = 'uflacs'
 df.parameters["form_compiler"]["optimize"] = True
@@ -31,6 +28,32 @@ df.parameters["form_compiler"]["cpp_optimize_flags"] = "-O3"
 import warnings
 from ffc.quadrature.deprecation import QuadratureRepresentationDeprecationWarning
 warnings.simplefilter("once", QuadratureRepresentationDeprecationWarning)
+
+
+def getFactorBalls(seed=1):
+    Nballs = 4
+    ellipseData = np.zeros((Nballs, 3))
+    xlin = np.linspace(0.0 + 0.5/np.sqrt(Nballs), 1.0 - 0.5/np.sqrt(Nballs),
+                       int(np.sqrt(Nballs)))
+
+    grid = np.meshgrid(xlin, xlin)
+    ellipseData[:, 0] = grid[0].flatten()
+    ellipseData[:, 1] = grid[1].flatten()
+    np.random.seed(seed)
+    ellipseData[:, 2] = r0 + np.random.rand(Nballs)*(r1 - r0)
+
+    fac = df.Expression('1.0', degree=2)  # ground substance
+    radiusThreshold = 0.01
+
+    str_fac = 'A*exp(-a*((x[0] - x0)*(x[0] - x0) + (x[1] - y0)*(x[1] - y0) ))'
+
+    for xi, yi, ri in ellipseData[:, 0:3]:
+        fac = fac + df.Expression(str_fac, A=contrast - 1.0,
+                                  a=- np.log(radiusThreshold)/ri**2,
+                                  x0=xi, y0=yi, degree=2)
+
+    return fac
+
 
 Lx = 2.0
 Ly = 0.5
@@ -42,19 +65,14 @@ else:
     Nx = 6
     Ny = 3
     
-facAvg = 4.0  # roughly chosen to approx single scale to mulsticale results
+facAvg = 1.0  # roughly chosen to approx single scale to mulsticale results
 lamb = facAvg*1.0
 mu = facAvg*0.5
-alpha = 1.0
+alpha = 0.0
 ty = -0.01
-
-model = hyperlasticityModel({'lamb' : lamb, 'mu': mu, 'alpha': alpha})
-model = hyperlasticityModel({'lamb' : lamb, 'mu': mu, 'alpha': alpha})
-
 
 mesh = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(Lx, Ly),
                         Nx, Ny, "right/left")
-
 
 start = timer()
 
@@ -88,16 +106,41 @@ bc = [bcL]
 def F_ext(v):
     return df.inner(traction, v)*ds(LoadBndFlag)
 
-model.createInternalVariables(W, W0, dxm)
+### Microscale 
+nCells = mesh.num_cells()
 
-hom = homogenisedModel(model.eps, model.stress_np, model.tangent_np)
+name_meshmicro = 'meshmicro.xdmf'
+NxMicro = NyMicro = 10 
+bndModel = 'lin' 
+
+r0 = 0.3
+r1 = 0.5
+
+lamb_matrix = 1.0
+mu_matrix = 0.5
+LxMicro = LyMicro = 1.0
+contrast = 1.0
+
+meshMicro = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(LxMicro, LyMicro),
+                             NxMicro, NyMicro, "right/left")
+
+facs = [getFactorBalls(0) for i in range(nCells)]
+np.random.seed(0)
+params = [[fac_i*lamb_matrix, fac_i*mu_matrix, alpha] for fac_i in facs]
+microModels = [MicroConstitutiveModelNonlinear(meshMicro, pi, bndModel)
+               for pi in params]
+
+
+# ===================================================================================
+
+
+hom = multiscaleModelExpression(W, dxm, microModels)
+# hom = hyperlasticityModelExpression(W, dxm, {'lamb' : lamb, 'mu': mu, 'alpha': alpha})
 
 u = df.Function(Uh, name="Total displacement")
 du = df.Function(Uh, name="Iteration correction")
 v = df.TestFunction(Uh)
 u_ = df.TrialFunction(Uh)
-
-# sig_expr = sigma_law_(symgradexpr) 
 
 a_Newton = df.inner(tensor2mandel(symgrad(u_)), df.dot(hom.tangent, tensor2mandel(symgrad(v))) )*dxm
 res = -df.inner(tensor2mandel(symgrad(v)), hom.stress )*dxm + F_ext(v)
@@ -117,7 +160,7 @@ niter = 0
 while nRes/nRes0 > tol and niter < Nitermax:
     df.solve(A, du.vector(), Res, "superlu")
     u.assign(u + du)
-    model.update_alpha(tensor2mandel(symgrad(u)))
+    hom.updateStrain(tensor2mandel(symgrad(u)))
     A, Res = df.assemble_system(a_Newton, res, bc)
     nRes = Res.norm("l2")
     print(" Residual:", nRes)

@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Mon Apr 25 16:52:43 2022
+
+@author: felipe
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Thu Mar 24 11:06:25 2022
 
 @author: felipe
@@ -22,7 +30,7 @@ from timeit import default_timer as timer
 from ufl import nabla_div
 from functools import partial 
 
-from micmacsfenics.core.fenicsUtils import symgrad, Integral, symgrad_voigt, macro_strain_mandel, tensor2mandel
+from micmacsfenics.core.fenicsUtils import symgrad, Integral, symgrad_voigt, macro_strain_mandel, tensor2mandel_np, mandel2tensor_np
 from micmacsfenics.formulations.dirichlet_lagrange import FormulationDirichletLagrange
 from micmacsfenics.formulations.linear import FormulationLinear
 from micmacsfenics.formulations.periodic import FormulationPeriodic
@@ -37,30 +45,30 @@ solver_parameters = {"nonlinear_solver": "newton",
                                        "error_on_nonconvergence": True}}
 
 def getPsi(u, param): # linear elastic one
-    lamb, mu = param
+    lamb, mu, alpha = param
     
     e = symgrad(u)
     tr_e = df.tr(e)
     e2 = df.inner(e,e)
     
-    return (0.5*lamb*(tr_e**2) + mu*(e2))
+    return (0.5*lamb*(1.0 + 0.5*alpha*(tr_e**2))*(tr_e**2) + mu*(1 + 0.5*alpha*e2)*(e2))
 
 def getSigma(u, param): # linear elastic one
-    lamb, mu = param
+    lamb, mu, alpha = param
     
     e = symgrad(u)
     tr_e = df.tr(e)
+    e2 = df.inner(e,e)
     
-    return (lamb*tr_e*df.Identity(2) + 2.0*mu*e)
+    return (lamb*(1.0 + alpha*(tr_e**2))*tr_e*df.Identity(2) + 2.0*mu*(1.0 + alpha*e2)*e)
 
-class MicroConstitutiveModelMinimisation(MicroConstitutiveModel):
+class MicroConstitutiveModelNonlinear(MicroConstitutiveModel):
 
-    def __init__(self, mesh, lame, model):
-        super().__init__(mesh, lame, model)
+    def __init__(self, mesh, param, model):
+        super().__init__(mesh, param, model)
 
-        self.psiLaw = partial(getPsi, param = lame)
-        self.sigmaLaw = partial(getSigma, param = lame)
-        
+        self.psiLaw = partial(getPsi, param = param)
+        self.sigmaLaw = partial(getSigma, param = param)
         
         self.onBoundary = df.CompiledSubDomain('on_boundary')
         self.Uh = df.VectorFunctionSpace(self.mesh, "CG", 1)     
@@ -79,7 +87,6 @@ class MicroConstitutiveModelMinimisation(MicroConstitutiveModel):
         vh  = df.TestFunction(self.Uh)             # Test function
         uh  = df.Function(self.Uh)                 # Displacement from previous iteration
 
-        
         Pi = self.psiLaw(df.dot(Eps,y) + uh)*dy
          
         F = df.derivative(Pi, uh, vh)
@@ -99,7 +106,7 @@ class MicroConstitutiveModelMinimisation(MicroConstitutiveModel):
             sig_mu = self.sigmaLaw(df.dot(Eps, y) + uh)
             sigma_hom = Integral(sig_mu, dy, (2, 2))/vol
 
-            self.Chom_[:, i] = tensor2mandel(sigma_hom)
+            self.Chom_[:, i] = tensor2mandel_np(sigma_hom)
 
             end = timer()
             print('time in solving system', end - start)
@@ -118,4 +125,37 @@ class MicroConstitutiveModelMinimisation(MicroConstitutiveModel):
         return self.Chom_
 
     def getStress(self, e):
-        return self.getTangent(e)@e
+        
+        dy = df.Measure('dx', self.mesh)
+        vol = df.assemble(df.Constant(1.0)*dy)
+        y = df.SpatialCoordinate(self.mesh)
+        Eps = df.Constant(((0., 0.), (0., 0.)))  # just placeholder
+        
+        duh = df.TrialFunction(self.Uh)            # Incremental displacement
+        vh  = df.TestFunction(self.Uh)             # Test function
+        uh  = df.Function(self.Uh)                 # Displacement from previous iteration
+
+        Pi = self.psiLaw(df.dot(Eps,y) + uh)*dy
+         
+        F = df.derivative(Pi, uh, vh)
+        J = df.derivative(F, uh, duh)
+        
+        Eps.assign(df.Constant(mandel2tensor_np(e)))  # just placeholder
+        
+        problem = df.NonlinearVariationalProblem(F, uh, self.bcD, J)
+        solver = df.NonlinearVariationalSolver(problem)
+        solver.parameters.update(solver_parameters)
+        
+        start = timer()
+    
+        solver.solve()
+        
+        sig_mu = self.sigmaLaw(df.dot(Eps, y) + uh)
+        sigma_hom = Integral(sig_mu, dy, (2, 2))/vol
+        
+        end = timer()
+        print('time in solving system', end - start)
+
+        return tensor2mandel_np(sigma_hom)
+        
+        
