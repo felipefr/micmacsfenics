@@ -8,7 +8,6 @@ Created on Wed Mar 24 18:18:10 2021
 import dolfin as df
 import numpy as np
 
-
 sqrt2 = np.sqrt(2)
 halfsqrt2 = 0.5*np.sqrt(2)
 Id_mandel_df = df.as_vector([1.0, 1.0, 0.0])
@@ -41,7 +40,11 @@ def tr_mandel(X):
     return X[0] + X[1]
 
 
-def symgrad(v): return df.sym(df.nabla_grad(v))
+def symgrad_mandel(v): # it was shown somehow to have better performance than doing it explicity
+    return tensor2mandel(symgrad(v))
+
+def symgrad(v): 
+    return df.sym(df.grad(v))
 
 def symgrad_voigt(v):
     return df.as_vector([v[0].dx(0), v[1].dx(1), v[0].dx(1) + v[1].dx(0)])

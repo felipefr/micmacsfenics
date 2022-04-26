@@ -24,4 +24,9 @@ class multiscaleModelExpression(materialModelExpression):
         
         return self.micromodels[cell.index].getTangent(e)
     
-     
+    def updateStrain(self, e):
+        super().updateStrain(e)
+        
+        for m in self.micromodels:
+            m.setUpdateFlag(False)
+    

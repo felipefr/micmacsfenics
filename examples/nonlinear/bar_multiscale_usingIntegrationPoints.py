@@ -17,7 +17,7 @@ sys.path.insert(0, '../../materials/')
 from micmacsfenics.core.micro_constitutive_model_nonlinear import MicroConstitutiveModelNonlinear
 
 from micmacsfenics.core.fenicsUtils import symgrad, tensor2mandel
-from multiscale_model_expression import multiscaleModelExpression
+from multiscale_material_model import multiscaleMaterialModel
 from timeit import default_timer as timer
 
 df.parameters["form_compiler"]["representation"] = 'uflacs'
@@ -79,11 +79,17 @@ start = timer()
 
 deg_u = 1
 deg_stress = 0
+deg_tan = 0
+
 Uh = df.VectorFunctionSpace(mesh, "CG", deg_u)
 We = df.VectorElement("Quadrature", mesh.ufl_cell(), degree=deg_stress, dim=3, quad_scheme='default')
 W = df.FunctionSpace(mesh, We)
 W0e = df.FiniteElement("Quadrature", mesh.ufl_cell(), degree=deg_stress, quad_scheme='default')
 W0 = df.FunctionSpace(mesh, W0e)
+
+Wten_e = df.VectorElement("Quadrature", mesh.ufl_cell(), degree=deg_tan, dim = 6, quad_scheme='default')
+Wten = df.FunctionSpace(mesh, Wten_e)
+
 
 metadata = {"quadrature_degree": deg_stress, "quadrature_scheme": "default"}
 dxm = df.Measure('dx' , domain = mesh, metadata = metadata) 
@@ -135,16 +141,18 @@ microModels = [MicroConstitutiveModelNonlinear(meshMicro, pi, bndModel)
 # ===================================================================================
 
 
-hom = multiscaleModelExpression(W, dxm, microModels)
-# hom = hyperlasticityModelExpression(W, dxm, {'lamb' : lamb, 'mu': mu, 'alpha': alpha})
+hom = multiscaleMaterialModel(microModels)
+hom.createInternalVariables(W, Wten, dxm)
 
 u = df.Function(Uh, name="Total displacement")
 du = df.Function(Uh, name="Iteration correction")
 v = df.TestFunction(Uh)
 u_ = df.TrialFunction(Uh)
 
-a_Newton = df.inner(tensor2mandel(symgrad(u_)), df.dot(hom.tangent, tensor2mandel(symgrad(v))) )*dxm
-res = -df.inner(tensor2mandel(symgrad(v)), hom.stress )*dxm + F_ext(v)
+hom.update_alpha(tensor2mandel(symgrad(u)))
+
+a_Newton = df.inner(tensor2mandel(symgrad(u_)), hom.tangent(tensor2mandel(symgrad(v))) )*dxm
+res = -df.inner(tensor2mandel(symgrad(v)), hom.sig )*dxm + F_ext(v)
 
 Nitermax, tol = 10, 1e-7  # parameters of the Newton-Raphson procedure
 
@@ -161,7 +169,7 @@ niter = 0
 while nRes/nRes0 > tol and niter < Nitermax:
     df.solve(A, du.vector(), Res)
     u.assign(u + du)
-    hom.updateStrain(tensor2mandel(symgrad(u)))
+    hom.update_alpha(tensor2mandel(symgrad(u)))
     A, Res = df.assemble_system(a_Newton, res, bc)
     nRes = Res.norm("l2")
     print(" Residual:", nRes)
@@ -172,6 +180,6 @@ print(end - start)
 
 
 u.rename("uh", ".")
-with df.XDMFFile("bar_multiscale.xdmf") as f:
+with df.XDMFFile("bar_multiscale_usingIntegrationPoints.xdmf") as f:
     f.write(u, 0.0)
 
