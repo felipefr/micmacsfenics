@@ -23,4 +23,5 @@ class multiscaleModelExpression(materialModelExpression):
     def tangentHomogenisation(self, e, cell = None): # elastic (I dont know why for the moment) # in mandel format
         
         return self.micromodels[cell.index].getTangent(e)
+    
      

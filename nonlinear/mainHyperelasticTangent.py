@@ -15,9 +15,7 @@ import numpy as np
 from ufl import nabla_div, indices
 sys.path.insert(0, '../core/')
 from fenicsUtils import symgrad
-
 from timeit import default_timer as timer
-
 
 # Optimization options for the form compiler
 df.parameters["form_compiler"]["cpp_optimize"] = True
@@ -68,6 +66,7 @@ traction = df.Constant((0.0, ty))
 dx = df.Measure('dx', domain=mesh)
 
 start = timer()
+
 # Define functions
 duh = df.Function(Uh)            # Incremental displacement
 uh_ = df.TrialFunction(Uh)            # Incremental displacement
@@ -77,24 +76,50 @@ uh  = df.Function(Uh)                 # Displacement from previous iteration
 # Kinematics
 I = df.Identity(2)    # Identity tensor
 F = I + df.grad(uh)             # Deformation gradient
+F_var = df.variable(F)
 
-C = F.T*F                 # Right Cauchy-Green tensor
+C = F_var.T*F_var                   # Right Cauchy-Green tensor
 
 
 # Invariants of deformation tensors
 Ic = df.tr(C)
-J  = df.det(F)
+J  = df.det(F_var)
 
 # Define variational problem
 psi = (mu/2)*(Ic - 3) - mu*df.ln(J) + (lmbda/2)*(df.ln(J))**2
 
-Psi = psi*dx - df.inner(traction, uh)*ds 
+P=df.diff(psi,F_var)
+A=df.diff(P, F_var)
 
-Res= df.derivative(Psi, uh, vh)
-Jac= df.derivative(Res, uh, uh_)
+# Pi = psi*dx - df.inner(traction, uh)*ds
 
-df.solve(Res == 0, uh, bcL, J = Jac) # bug using the jacobian
+i,j,k,l = indices(4)
+Res = df.inner(P, df.grad(vh))*dx - df.inner(traction, vh)*ds 
+Jac = df.inner(df.as_tensor(A[i,j,k,l]*uh_[k].dx(l), (i,j)), df.grad(vh))*dx
 
+uh.vector().set_local(np.zeros(Uh.dim()))
+df.solve(Res == 0, uh, [bcL], J = Jac) # bug using the jacobian
+
+# Nitermax, tol = 10, 1e-7  # parameters of the Newton-Raphson procedure
+
+# A, b = df.assemble_system(Jac, Res, bcL)
+# nRes0 = b.norm("l2")
+# nRes = nRes0
+# duh.vector().set_local(np.zeros(Uh.dim()))
+# uh.vector().set_local(np.zeros(Uh.dim()))
+
+# print(" Residual:", nRes)
+
+# niter = 0
+# while nRes/nRes0 > tol and niter < Nitermax:
+#     df.solve(A, duh.vector(), b)
+#     uh.assign(uh + duh)
+#     A, b = df.assemble_system(Jac, Res, bcL)
+#     nRes = b.norm("l2")
+#     print(" Residual:", nRes)
+#     niter += 1
+    
+    
 end = timer()
 print(end - start)
 

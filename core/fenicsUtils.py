@@ -9,6 +9,7 @@ import dolfin as df
 import numpy as np
 
 
+sqrt2 = np.sqrt(2)
 halfsqrt2 = 0.5*np.sqrt(2)
 Id_mandel_df = df.as_vector([1.0, 1.0, 0.0])
 Id_mandel_np = np.array([1.0, 1.0, 0.0])
@@ -23,11 +24,19 @@ def tensor2mandel_np(X):
 
 def tensor2mandel(X):
     return df.as_vector([X[0,0], X[1,1], halfsqrt2*(X[0,1] + X[1,0])])
-                      
+
+
 def mandel2tensor(X):
     return df.as_tensor([[X[0], halfsqrt2*X[2]],
                         [halfsqrt2*X[2], X[1]]])
-      
+
+def tensor4th2mandel(X):
+    
+    return df.as_tensor([ [X[0,0,0,0], X[0,0,1,1], sqrt2*X[0,0,0,1]],
+                          [X[0,0,0,0], X[0,0,1,1], sqrt2*X[0,0,0,1]],
+                          [sqrt2*X[0,1,0,0], sqrt2*X[0,1,1,1], 2*X[1,1,1,1]] ] )
+                      
+   
 def tr_mandel(X):
     return X[0] + X[1]
 

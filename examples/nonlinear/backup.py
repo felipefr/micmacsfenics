@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Tue Apr 26 16:59:50 2022
+
+@author: felipe
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Mon Apr 25 16:52:43 2022
 
 @author: felipe
@@ -65,11 +73,14 @@ def getSigma(u, param): # linear elastic one
     return (lamb*(1.0 + alpha*(tr_e**2))*tr_e*df.Identity(2) + 2.0*mu*(1.0 + alpha*e2)*e)
 
 
-class MicroConstitutiveModelNonlinear(MicroConstitutiveModel):
+class MicroConstitutiveModelNonlinear:
 
-    def __init__(self, mesh, param, model):
-        super().__init__(mesh, param, model)
-
+    def __init__(self, mesh, param, bcmodel = None):        
+        
+        self.mesh = mesh
+        self.ndim = 2
+        self.nvoigt = int(self.ndim*(self.ndim + 1)/2)
+                
         self.param = param
         self.psiLaw = partial(getPsi, param = param)
         self.sigmaLaw = partial(getSigma, param = param)
@@ -84,12 +95,15 @@ class MicroConstitutiveModelNonlinear(MicroConstitutiveModel):
         self.setMicroproblem()
         self.setCanonicalproblem()
     
+    def setUpdateFlag(self, flag):
+        self.isUpdated = flag
+        
     def declareAuxVariables(self):
     
         self.dy = df.Measure('dx', self.mesh)
         self.vol = df.assemble(df.Constant(1.0)*self.dy)
         self.y = df.SpatialCoordinate(self.mesh)
-        self.Eps = df.Constant((0., 0., 0.))  # just placeholder
+        self.Eps = df.Constant((0.0, 0., 0.))  # just placeholder
         self.Eps_kl = df.Constant((0., 0., 0.))  # just placeholder
         
         self.duh = df.TrialFunction(self.Uh)            # Incremental displacement
@@ -116,10 +130,10 @@ class MicroConstitutiveModelNonlinear(MicroConstitutiveModel):
     
     def setCanonicalproblem(self):
         
-        dy, vol, y, Eps = self.dy, self.vol, self.y, self.Eps
+        dy, Eps = self.dy, self.Eps
         uh, vh, duh = self.uh, self.vh, self.duh
          
-        eps = self.Eps  + tensor2mandel(symgrad(self.uh))             # Deformation gradient
+        eps = Eps  + tensor2mandel(symgrad(uh))             # Deformation gradient
         eps_var = df.variable(eps)
         
         tr_e = tr_mandel(eps_var)
@@ -137,24 +151,54 @@ class MicroConstitutiveModelNonlinear(MicroConstitutiveModel):
         self.LHS = df.inner(df.dot( self.Cmu, tensor2mandel(symgrad(duh))), tensor2mandel(symgrad(vh)))*dy
         
         self.RHS = -df.inner(df.dot( self.Cmu, self.Eps_kl), tensor2mandel(symgrad(vh)))*dy 
+      
+    def getStress(self, e,  cell = None):
         
+        if(not self.isUpdated):
+            self.__computeStressAndTangent(e)            
+        
+        return self.stresshom
     
-    def computeTangent(self, e):
+    def getTangent(self, e, cell = None):
+        if(not self.isUpdated):
+            self.__computeStressAndTangent(e)            
+        
+        return self.Chom_
+
+        
+    def __computeStressAndTangent(self, e):
+        
+        self.Eps.assign(df.Constant(e))  # just placeholder
+    
+        start = timer()
+        
+        self.setMicroproblem()
+        self.microsolver.solve()
+        
+        end = timer()
+        print('time in solving system', end - start)
+            
+        self.homogeniseStress()
+        
+        self.setCanonicalproblem()
+        self.homogeniseTangent()
+        
+        self.setUpdateFlag(True)
+    
+    def homogeniseTangent(self):
+        
+
         
         # print("index" , epsMacro)
-    
-        self.setCanonicalproblem()
-        dy, vol, y, Eps, Eps_kl, Cmu = self.dy, self.vol, self.y, self.Eps, self.Eps_kl, self.Cmu
-        uh, vh, duh = self.uh, self.vh, self.duh
-        
-        Eps.assign(df.Constant(e))
-        
+
+        dy, vol, Eps, Eps_kl, Cmu = self.dy, self.vol, self.Eps, self.Eps_kl, self.Cmu
+
         A = df.assemble(self.LHS)
         self.bcD.apply(A)
                         
         solver = df.PETScLUSolver()
         
-        self.Chom_ = Integral(Cmu, dy, (self.nvoigt,self.nvoigt)) # just Chom_bar
+        self.Chom_ = Integral(Cmu, dy, (self.nvoigt,self.nvoigt))/vol # just Chom_bar
         
         ukl = df.Function(self.Uh)
         
@@ -164,7 +208,7 @@ class MicroConstitutiveModelNonlinear(MicroConstitutiveModel):
             start = timer()
             
             unit_vec[i] = 1.0
-            self.Eps_kl.assign(df.Constant(unit_vec))
+            Eps_kl.assign(df.Constant(unit_vec))
             
             b = df.assemble(self.RHS)
             self.bcD.apply(b)
@@ -172,7 +216,7 @@ class MicroConstitutiveModelNonlinear(MicroConstitutiveModel):
             solver.solve(A, ukl.vector(), b)
             
             # Chom fluc
-            self.Chom_[i,:] = self.Chom_[i,:] + Integral(df.dot(Cmu, tensor2mandel(symgrad(ukl))) , dy, ((self.nvoigt,)))
+            self.Chom_[i,:] = self.Chom_[i,:] + Integral(df.dot(Cmu, tensor2mandel(symgrad(ukl))) , dy, ((self.nvoigt,)))/vol
             
             unit_vec[i] = 0.0
         
@@ -180,36 +224,12 @@ class MicroConstitutiveModelNonlinear(MicroConstitutiveModel):
         end = timer()
         print('time in solving system', end - start)
 
-    
-
-        # print(self.Chom_)
-        # input()
-        # from the second run onwards, just returns
-        # self.getTangent = self.getTangent_
-
-        # print(self.Chom_)
-        # input()
-        return self.Chom_
-
-    def getTangent_(self, e):
-        return self.Chom_
-
-    def getStress(self, e):
-        
-        self.Eps.assign(df.Constant(e))  # just placeholder
-        
-        start = timer()
-    
-        self.microsolver.solve()
+    def homogeniseStress(self):
         
         sig_mu = self.sigmaLaw(df.dot(mandel2tensor(self.Eps), self.y) + self.uh)
         sigma_hom = Integral(sig_mu, self.dy, (2, 2))/self.vol
         
         self.stresshom[:] = tensor2mandel_np(sigma_hom)
         
-        end = timer()
-        print('time in solving system', end - start)
-
-        return self.stresshom
         
         

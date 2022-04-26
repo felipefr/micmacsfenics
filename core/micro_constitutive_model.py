@@ -28,6 +28,7 @@ listMultiscaleModels = {'MR': FormulationMinimallyConstrained,
                         'dnn': FormulationDirichletLagrange} # add now
 
 
+
 class MicroConstitutiveModel:
 
     def __init__(self, mesh, lame, model):

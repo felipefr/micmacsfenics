@@ -8,6 +8,7 @@ Created on Tue Apr 19 14:24:12 2022
 
 import sys
 import dolfin as df
+from functools import partial
 
 import numpy as np
 
@@ -34,14 +35,14 @@ if(len(sys.argv)>2):
     Nx = int(sys.argv[1])
     Ny = int(sys.argv[2])
 else:
-    Nx = 6
-    Ny = 3
+    Nx = 3
+    Ny = 2
     
 facAvg = 1.0  # roughly chosen to approx single scale to mulsticale results
 lamb = facAvg*1.0
 mu = facAvg*0.5
-alpha = 0.0
-ty = -0.01
+alpha = 10.0
+ty = -0.1
 
 mesh = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(Lx, Ly),
                         Nx, Ny, "right/left")
@@ -116,4 +117,20 @@ print(end - start)
 u.rename("uh", ".")
 with df.XDMFFile("bar_single_blackbox.xdmf") as f:
     f.write(u, 0.0)
+    
+    
+    
+def getSigma(e, param): # linear elastic one
+    lamb, mu, alpha = param
+
+    tr_e = df.tr(e)
+    e2 = df.inner(e,e)
+    
+    return (lamb*(1.0 + alpha*(tr_e**2))*tr_e*df.Identity(2) + 2.0*mu*(1.0 + alpha*e2)*e)
+
+
+sigma = partial(getSigma, [lamb, mu, alpha]) 
+
+
+
 

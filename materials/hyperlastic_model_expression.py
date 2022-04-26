@@ -11,6 +11,7 @@ import numpy as np
 from material_model_expression import materialModelExpression
 from micmacsfenics.core.fenicsUtils import (symgrad, tensor2mandel,  mandel2tensor, tr_mandel, Id_mandel_np)
 
+# Constant materials params
 class hyperlasticityModelExpression(materialModelExpression):
     
     def __init__(self, W, dxm, param):

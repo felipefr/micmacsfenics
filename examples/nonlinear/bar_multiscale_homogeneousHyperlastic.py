@@ -45,7 +45,7 @@ def getFactorBalls(seed=1):
     fac = df.Expression('1.0', degree=2)  # ground substance
     radiusThreshold = 0.01
 
-    str_fac = 'A*exp(-a*((x[0] - x0)*(x[0] - x0) + (x[1] - y0)*(x[1] - y0) ))'
+    str_fac = 'A*exp( -a*((x[0] - x0)*(x[0] - x0) + (x[1] - y0)*(x[1] - y0)) )'
 
     for xi, yi, ri in ellipseData[:, 0:3]:
         fac = fac + df.Expression(str_fac, A=contrast - 1.0,
@@ -62,19 +62,20 @@ if(len(sys.argv)>2):
     Nx = int(sys.argv[1])
     Ny = int(sys.argv[2])
 else:
-    Nx = 6
-    Ny = 3
+    Nx = 3
+    Ny = 2
     
 facAvg = 1.0  # roughly chosen to approx single scale to mulsticale results
 lamb = facAvg*1.0
 mu = facAvg*0.5
-alpha = 0.0
-ty = -0.01
+alpha = 10.0
+ty = -0.1
 
 mesh = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(Lx, Ly),
                         Nx, Ny, "right/left")
 
 start = timer()
+
 
 deg_u = 1
 deg_stress = 0
@@ -158,7 +159,7 @@ print(" Residual:", nRes)
 
 niter = 0
 while nRes/nRes0 > tol and niter < Nitermax:
-    df.solve(A, du.vector(), Res, "superlu")
+    df.solve(A, du.vector(), Res)
     u.assign(u + du)
     hom.updateStrain(tensor2mandel(symgrad(u)))
     A, Res = df.assemble_system(a_Newton, res, bc)
