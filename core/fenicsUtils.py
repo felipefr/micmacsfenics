@@ -5,6 +5,8 @@ Created on Wed Mar 24 18:18:10 2021
 
 @author: felipefr
 """
+
+from numba import jit, generated_jit
 import dolfin as df
 import numpy as np
 
@@ -73,22 +75,16 @@ def voigt2strain(e):
 
 
 def voigt2stress(s):
-    return df.as_tensor([[e[0], e[2]], [e[2], e[1]]])
+    return df.as_tensor([[s[0], s[2]], [s[2], s[1]]])
 
+# @generated_jit(cache=True)
 def Integral(u, dx, shape):
-    n = len(shape)
-    valueIntegral = np.zeros(shape)
+    if(len(shape) == 1):
+        return np.array([ df.assemble(u[i]*dx) for i in range(shape[0])]) 
 
-    if(n == 1):
-        for i in range(shape[0]):
-            valueIntegral[i] = df.assemble(u[i]*dx)
-
-    elif(n == 2):
-        for i in range(shape[0]):
-            for j in range(shape[1]):
-                valueIntegral[i, j] = df.assemble(u[i, j]*dx)
-
-    return valueIntegral
+    elif(len(shape) == 2):
+        return np.array( [ [ df.assemble(u[i, j]*dx) for j in range(shape[1])] 
+                          for i in range(shape[0]) ])
 
 
 class LocalProjector:

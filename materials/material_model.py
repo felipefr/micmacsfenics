@@ -15,16 +15,16 @@ sys.path.insert(0, '../../core/')
 
 class materialModel:
     
-    def sigma(self, e):
+    def stress_op(self, e):
         pass
     
-    def tangent(self, e):
+    def tangent_op(self, de):
         pass
     
     def createInternalVariables(self, W, W0, dxm):
         pass
     
-    def update_alpha(self,deps, old_sig, old_p):
+    def update(self,deps, old_sig, old_p):
         pass
     
     def project_var(self, AA):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 25 16:52:43 2022
+Created on Fri Apr 29 23:59:30 2022
 
 @author: felipe
 """
@@ -14,10 +14,10 @@ from timeit import default_timer as timer
 from ufl import nabla_div, indices
 from functools import partial 
 
-# from micmacsfenics.core.fenicsUtils import (symgrad, symgrad_mandel, Integral, tensor2mandel_np, mandel2tensor_np, 
-#                                             tensor2mandel, tensor4th2mandel, mandel2tensor, tr_mandel, Id_mandel_df, Id_mandel_np, LocalProjector)
+from micmacsfenics.core.fenicsUtils import (symgrad, symgrad_mandel, Integral, tensor2mandel_np, mandel2tensor_np, 
+                                            tensor2mandel, tensor4th2mandel, mandel2tensor, tr_mandel, Id_mandel_df, Id_mandel_np, LocalProjector)
 
-import fetricks as ft
+
 
 
 solver_parameters = {"nonlinear_solver": "newton",
@@ -25,15 +25,17 @@ solver_parameters = {"nonlinear_solver": "newton",
                                        "report": False,
                                        "error_on_nonconvergence": True}}
 
+ind_sym_tensor = np.array([0, 1, 2, 4, 5, 8])
+
 def getPsi(e, param):
-    tr_e = ft.tr_mandel(e)
+    tr_e = tr_mandel(e)
     e2 = df.inner(e, e)
 
     lamb, mu, alpha = param
     
     return (0.5*lamb*(1.0 + 0.5*alpha*(tr_e**2))*(tr_e**2) + mu*(1 + 0.5*alpha*e2)*(e2))
 
-class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
+class MicroConstitutiveModelNonlinear_opt: # TODO derive it again from a base class
 
     # Counter of calls 
     countComputeFluctuations = 0
@@ -62,8 +64,14 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
         self.declareAuxVariables()
         self.setMicroproblem()
         self.setCanonicalproblem()
-        
     
+    
+    def setGlobalVectors(self , eps_global, sig_global, tan_global, id_global, id_global_tan):
+        self.eps_global = eps_global
+        self.sig_global = sig_global
+        self.tan_global = tan_global
+        self.id_global = id_global
+        self.id_global_tan = id_global_tan
         
 
     def setUpdateFlag(self, flag):
@@ -107,7 +115,7 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
         dy, Eps = self.dy, self.Eps
         uh, vh, duh = self.uh, self.vh, self.duh
         
-        eps = Eps  + ft.symgrad_mandel(uh)            # Deformation gradient
+        eps = Eps  + symgrad_mandel(uh)            # Deformation gradient
         eps_var = df.variable(eps)
         
         psi_mu = getPsi(eps_var, self.param)
@@ -115,8 +123,8 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
         self.sigmu = df.diff(psi_mu , eps_var)
         self.Cmu = df.diff(self.sigmu, eps_var)
 
-        self.Res = df.inner(self.sigmu , ft.symgrad_mandel(vh))*dy 
-        self.Jac = df.inner(df.dot( self.Cmu, ft.symgrad_mandel(duh)), ft.symgrad_mandel(vh))*dy
+        self.Res = df.inner(self.sigmu , symgrad_mandel(vh))*dy 
+        self.Jac = df.inner(df.dot( self.Cmu, symgrad_mandel(duh)), symgrad_mandel(vh))*dy
         
         self.microproblem = df.NonlinearVariationalProblem(self.Res, uh, self.bcD, self.Jac)
         self.microsolver = df.NonlinearVariationalSolver(self.microproblem)
@@ -126,7 +134,7 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
     def setCanonicalproblem(self):
         dy, vh = self.dy, self.vh
                  
-        self.RHS_can = -df.inner(df.dot( self.Cmu, self.Eps_kl), ft.symgrad_mandel(vh))*dy 
+        self.RHS_can = -df.inner(df.dot( self.Cmu, self.Eps_kl), symgrad_mandel(vh))*dy 
         
         self.Acan = df.PETScMatrix()
         self.bcan = df.PETScVector()
@@ -156,22 +164,22 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
     
             self.solver_can.solve(self.Acan, ukl.vector(), self.bcan)
         
-            self.tangenthom[i,:] += ft.Integral(df.dot(Cmu, Eps_kl +  ft.symgrad_mandel(ukl)) , dy, ((self.nvoigt,)))/vol
+            self.tangenthom[i,:] += Integral(df.dot(Cmu, Eps_kl +  symgrad_mandel(ukl)) , dy, ((self.nvoigt,)))/vol
             
             unit_vec[i] = 0.0
         
-        
+        self.tan_global[self.id_global_tan:self.id_global_tan + 6] = self.tangenthom.flatten()[ind_sym_tensor]
         type(self).countComputeCanonicalProblem = type(self).countComputeCanonicalProblem + 1
         
         return self.tangenthom[i,:]
         
     def __homogeniseStress(self):
-        self.stresshom[:] = ft.Integral(self.sigmu, self.dy, (self.nvoigt,))/self.vol
+        self.sig_global[self.id_global:self.id_global+3] = Integral(self.sigmu, self.dy, (self.nvoigt,))/self.vol
         
         return self.stresshom[:]
     
     def __computeFluctuations(self, e):
-        self.Eps.assign(df.Constant(e))
+        self.Eps.assign(df.Constant(self.eps_global[self.id_global:self.id_global+3]))
         self.microsolver.solve()
         self.setFluctuationUpdateFlag(True)
         
