@@ -6,7 +6,6 @@ Created on Wed Mar 24 18:18:10 2021
 @author: felipefr
 """
 
-from numba import jit, generated_jit
 import dolfin as df
 import numpy as np
 

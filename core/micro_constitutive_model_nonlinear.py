@@ -8,7 +8,7 @@ Created on Mon Apr 25 16:52:43 2022
 
 import sys
 import numpy as np
-import multiphenics as mp
+#import multiphenics as mp
 import dolfin as df
 from timeit import default_timer as timer
 from ufl import nabla_div, indices
@@ -38,6 +38,8 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
     # Counter of calls 
     countComputeFluctuations = 0
     countComputeCanonicalProblem = 0
+    countTangentCalls = 0
+    countStressCalls = 0
    
     def __init__(self, mesh, param, model = None):
 
@@ -63,9 +65,6 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
         self.setMicroproblem()
         self.setCanonicalproblem()
         
-    
-        
-
     def setUpdateFlag(self, flag):
         self.setStressUpdateFlag(flag)
         self.setTangentUpdateFlag(flag)
@@ -73,13 +72,22 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
         
     def setStressUpdateFlag(self, flag):
         if(flag):
-            self.getStress = lambda e: self.stresshom
+            self.getStress = self.__returnStress
         else:
             self.getStress = self.__computeStress
 
+    
+    def __returnTangent(self, e):
+        type(self).countTangentCalls = type(self).countTangentCalls + 1     
+        return self.tangenthom
+    
+    def __returnStress(self, e):
+        type(self).countStressCalls = type(self).countStressCalls + 1     
+        return self.stresshom
+    
     def setTangentUpdateFlag(self, flag):
         if(flag):
-            self.getTangent = lambda e: self.tangenthom
+            self.getTangent = self.__returnTangent 
         else:
             self.getTangent = self.__computeTangent
     
@@ -163,13 +171,10 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
         
         type(self).countComputeCanonicalProblem = type(self).countComputeCanonicalProblem + 1
         
-        return self.tangenthom[i,:]
         
     def __homogeniseStress(self):
-        self.stresshom[:] = ft.Integral(self.sigmu, self.dy, (self.nvoigt,))/self.vol
+        self.stresshom = ft.Integral(self.sigmu, self.dy, (self.nvoigt,))/self.vol
         
-        return self.stresshom[:]
-    
     def __computeFluctuations(self, e):
         self.Eps.assign(df.Constant(e))
         self.microsolver.solve()
@@ -185,7 +190,7 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
         self.__homogeniseStress()
         self.setStressUpdateFlag(True)
     
-        return self.stresshom
+        return self.__returnStress(e)
         
     
     def __computeTangent(self, e):
@@ -196,5 +201,5 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
         self.__homogeniseTangent()
         self.setTangentUpdateFlag(True)            
         
-        return self.tangenthom
+        return self.__returnTangent(e)
         
