@@ -25,6 +25,13 @@ solver_parameters = {"nonlinear_solver": "newton",
                                        "report": False,
                                        "error_on_nonconvergence": True}}
 
+# diagonal + non_diagonal convention
+ind_sym_tensor = np.array([0, 4, 8, 5, 2, 1])
+symflatten = lambda A: 0.5*(A + A.T).flatten()[ind_sym_tensor]
+
+# symflatten = lambda A: np.array( [ A[0,0], A[1,1], A[2,2], 
+                                 # 0.5*(A[2,1] + A[1,2]) , 0.5*(A[0,2] + A[2,0]), 0.5*(A[0,1] + A[1,0])] )
+
 def getPsi(e, param):
     tr_e = ft.tr_mandel(e)
     e2 = df.inner(e, e)
@@ -64,7 +71,10 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
         self.declareAuxVariables()
         self.setMicroproblem()
         self.setCanonicalproblem()
-        
+    
+    
+    
+    
     def setUpdateFlag(self, flag):
         self.setStressUpdateFlag(flag)
         self.setTangentUpdateFlag(flag)
@@ -76,6 +86,14 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
         else:
             self.getStress = self.__computeStress
 
+    
+    def getStressTangent(self, e):
+        # return np.concatenate((self.getStress(e), symflatten(self.getTangent(e))))
+        return self.getStress(e), symflatten(self.getTangent(e))
+
+    def getStressTangent_force(self, e):
+        self.setUpdateFlag(False)
+        return self.getStressTangent(e)
     
     def __returnTangent(self, e):
         type(self).countTangentCalls = type(self).countTangentCalls + 1     
@@ -134,6 +152,7 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
     def setCanonicalproblem(self):
         dy, vh = self.dy, self.vh
                  
+        # negative because 
         self.RHS_can = -df.inner(df.dot( self.Cmu, self.Eps_kl), ft.symgrad_mandel(vh))*dy 
         
         self.Acan = df.PETScMatrix()
