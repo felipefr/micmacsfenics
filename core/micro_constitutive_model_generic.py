@@ -27,14 +27,14 @@ class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
     countTangentCalls = 0
     countStressCalls = 0
    
-    def __init__(self, mesh, param, model = None):
+    def __init__(self, mesh, psi_mu, bnd_model = None):
 
         self.mesh = mesh
         self.ndim = 2
         self.nvoigt = int(self.ndim*(self.ndim + 1)/2)
         self.tensor_encoding = "mandel"        
         
-        self.param = param
+        self.psi_mu = psi_mu
         
         self.onBoundary = df.CompiledSubDomain('on_boundary')
         self.Uh = df.VectorFunctionSpace(self.mesh, "CG", 1)     
@@ -124,8 +124,7 @@ class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
         eps = Eps  + ft.symgrad_mandel(uh)            # Deformation gradient
         eps_var = df.variable(eps)
         
-        psi_mu = partial(self.param["psi"], param = self.param)
-        self.sigmu, self.Cmu = ft.get_stress_tang_from_psi(psi_mu, eps_var, eps_var) 
+        self.sigmu, self.Cmu = ft.get_stress_tang_from_psi(self.psi_mu, eps_var, eps_var) 
         
         self.Res = df.inner(self.sigmu , ft.symgrad_mandel(vh))*dy 
         self.Jac = df.inner(df.dot( self.Cmu, ft.symgrad_mandel(duh)), ft.symgrad_mandel(vh))*dy
