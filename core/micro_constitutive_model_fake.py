@@ -11,6 +11,7 @@ import numpy as np
 #import multiphenics as mp
 import dolfin as df
 from timeit import default_timer as timer
+import time
 from ufl import nabla_div, indices
 from functools import partial 
 
@@ -26,9 +27,10 @@ class MicroConstitutiveModelFake: # Make it a abstract class (make it simpler)
     countStressCalls = 0
    
     def __init__(self, param, ndim = 2, tensor_encoding = 'mandel'):
-        nu, lamb = param
+        nu, lamb, self.alpha = param
         self.param = param
         self.lame = youngPoisson2lame(nu, lamb)
+        
         self.tensor_encoding = "mandel"
         self.ndim = ndim
         self.strain_dim = int(self.ndim*(self.ndim + 1)/2)
@@ -57,7 +59,13 @@ class MicroConstitutiveModelFake: # Make it a abstract class (make it simpler)
             # self.getStress = self.__computeStress
 
     def getStress(self,e):
-        self.stresshom = self.lame[0]*tr_mandel(e)*Id_mandel_np + 2*self.lame[1]*e
+        tr_e = tr_mandel(e)
+        e2 = np.dot(e, e)
+        
+        # time.sleep(0.02)
+        
+        self.stresshom = self.lame[0]*(1 + self.alpha*tr_e**2)*tr_e*Id_mandel_np + 2*self.lame[1]*(1 + self.alpha*e2)*e  
+        
         return self.stresshom
 
     def setTangentUpdateFlag(self, flag):
@@ -87,7 +95,12 @@ class MicroConstitutiveModelFake: # Make it a abstract class (make it simpler)
         type(self).countComputeCanonicalProblem = type(self).countComputeCanonicalProblem + 1
             
     def __homogeniseStress(self):
-        self.stresshom = self.lame[0]*tr_mandel(self.eps)*Id_mandel_np + 2*self.lame[1]*self.eps   
+        
+        tr_e = tr_mandel(self.eps)
+        e2 = np.dot(self.eps, self.eps)
+        
+        
+        self.stresshom = self.lame[0]*(1 + self.alpha*tr_e**2)*tr_e*Id_mandel_np + 2*self.lame[1]*(1 + self.alpha*e2)*self.eps   
         
     def __computeFluctuations(self, e):
         self.eps = e

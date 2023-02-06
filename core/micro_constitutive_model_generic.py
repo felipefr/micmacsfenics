@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 25 16:52:43 2022
+Created on Mon Feb  6 20:23:09 2023
 
-@author: felipe
+@author: ffiguere
 """
 
 import sys
 import numpy as np
-#import multiphenics as mp
 import dolfin as df
 from timeit import default_timer as timer
-from ufl import nabla_div, indices
 from functools import partial 
-
-# from micmacsfenics.core.fenicsUtils import (symgrad, symgrad_mandel, Integral, tensor2mandel_np, mandel2tensor_np, 
-#                                             tensor2mandel, tensor4th2mandel, mandel2tensor, tr_mandel, Id_mandel_df, Id_mandel_np, LocalProjector)
-
 import fetricks as ft
 
 
@@ -25,22 +19,7 @@ solver_parameters = {"nonlinear_solver": "newton",
                                        "report": False,
                                        "error_on_nonconvergence": True}}
 
-# diagonal + non_diagonal convention
-ind_sym_tensor = np.array([0, 4, 8, 5, 2, 1])
-symflatten = lambda A: 0.5*(A + A.T).flatten()[ind_sym_tensor]
-
-# symflatten = lambda A: np.array( [ A[0,0], A[1,1], A[2,2], 
-                                 # 0.5*(A[2,1] + A[1,2]) , 0.5*(A[0,2] + A[2,0]), 0.5*(A[0,1] + A[1,0])] )
-
-def getPsi(e, param):
-    tr_e = ft.tr_mandel(e)
-    e2 = df.inner(e, e)
-
-    lamb, mu, alpha = param
-    
-    return (0.5*lamb*(1.0 + 0.5*alpha*(tr_e**2))*(tr_e**2) + mu*(1 + 0.5*alpha*e2)*(e2))
-
-class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
+class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
 
     # Counter of calls 
     countComputeFluctuations = 0
@@ -98,7 +77,7 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
     
     def getStressTangent(self, e):
         # return np.concatenate((self.getStress(e), symflatten(self.getTangent(e))))
-        return self.getStress(e), symflatten(self.getTangent(e))
+        return self.getStress(e), ft.sym_flatten_6x6_np(self.getTangent(e))
 
     def getStressTangent_force(self, e):
         self.setUpdateFlag(False)
@@ -145,11 +124,9 @@ class MicroConstitutiveModelNonlinear: # TODO derive it again from a base class
         eps = Eps  + ft.symgrad_mandel(uh)            # Deformation gradient
         eps_var = df.variable(eps)
         
-        psi_mu = getPsi(eps_var, self.param)
+        psi_mu = partial(self.param["psi"], param = self.param)
+        self.sigmu, self.Cmu = ft.get_stress_tang_from_psi(psi_mu, eps_var, eps_var) 
         
-        self.sigmu = df.diff(psi_mu , eps_var)
-        self.Cmu = df.diff(self.sigmu, eps_var)
-
         self.Res = df.inner(self.sigmu , ft.symgrad_mandel(vh))*dy 
         self.Jac = df.inner(df.dot( self.Cmu, ft.symgrad_mandel(duh)), ft.symgrad_mandel(vh))*dy
         
