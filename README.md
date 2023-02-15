@@ -13,3 +13,5 @@ If this library has been useful for you, please the article in which this librar
   journal={arXiv preprint arXiv:2110.11141},
   year={2021}
 }
+
+[![DOI](https://zenodo.org/badge/341954015.svg)](https://zenodo.org/badge/latestdoi/341954015)
