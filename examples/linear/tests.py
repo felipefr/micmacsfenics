@@ -3,8 +3,18 @@
 """
 Created on Tue May 25 10:18:34 2021
 
-@author: felipefr
+@author: felipe rocha
 
+This file is part of micmacsfenics, a FEniCs-based implementation of 
+two-level finite element simulations (FE2) using computational homogenization.
+
+Copyright (c) 2021-2023, Felipe Rocha.
+See file LICENSE.txt for license information. 
+Please cite this work according to README.md.
+Please report all bugs and problems to <felipe.figueredo-rocha@ec-nantes.fr>, or <felipe.f.rocha@gmail.com>
+"""
+"""
+Description:
 test_bndModel = test different boundary conditions for multiscale models in
 comparison to the single scale simulation. For the mesh chosen it should agree
 with the given errors. Also 'lag' and 'lin' error should match.

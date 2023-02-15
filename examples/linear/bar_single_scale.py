@@ -1,10 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Available in: https://github.com/felipefr/micmacsFenics.git
-@author: Felipe Figueredo Rocha, f.rocha.felipe@gmail.com,
-felipe.figueredorocha@epfl.ch
 
+"""
+@author: felipe rocha
+
+This file is part of micmacsfenics, a FEniCs-based implementation of 
+two-level finite element simulations (FE2) using computational homogenization.
+
+Copyright (c) 2021-2023, Felipe Rocha.
+See file LICENSE.txt for license information. 
+Please cite this work according to README.md.
+Please report all bugs and problems to <felipe.figueredo-rocha@ec-nantes.fr>, or <felipe.f.rocha@gmail.com>
+"""
+
+"""
+Description:
 Bar problem given a constitutive law (single-scale):
 Problem in [0,Lx]x[0,Ly], homogeneous dirichlet on left and traction on the
 right. We use an isotropic linear material, given two lamé parameters.

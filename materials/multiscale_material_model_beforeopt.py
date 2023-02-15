@@ -3,23 +3,15 @@
 """
 Created on Sat Apr 30 00:23:16 2022
 
-@author: felipe
-"""
+@author: felipe rocha
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 26 20:06:27 2022
+This file is part of micmacsfenics, a FEniCs-based implementation of 
+two-level finite element simulations (FE2) using computational homogenization.
 
-@author: felipe
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 19 15:18:46 2022
-
-@author: felipe
+Copyright (c) 2022-2023, Felipe Rocha.
+See file LICENSE.txt for license information. 
+Please cite this work according to README.md.
+Please report all bugs and problems to <felipe.figueredo-rocha@ec-nantes.fr>, or <felipe.f.rocha@gmail.com>
 """
 
 import sys

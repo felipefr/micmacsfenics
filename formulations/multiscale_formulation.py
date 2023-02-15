@@ -1,6 +1,15 @@
 """
 Created on Wed Mar 24 12:47:54 2021
-@author: felipefr
+
+@author: felipe rocha
+
+This file is part of micmacsfenics, a FEniCs-based implementation of 
+two-level finite element simulations (FE2) using computational homogenization.
+
+Copyright (c) 2022-2023, Felipe Rocha.
+See file LICENSE.txt for license information. 
+Please cite this work according to README.md.
+Please report all bugs and problems to <felipe.figueredo-rocha@ec-nantes.fr>, or <felipe.f.rocha@gmail.com>
 """
 
 import sys
