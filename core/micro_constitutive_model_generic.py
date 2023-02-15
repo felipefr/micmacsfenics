@@ -77,9 +77,9 @@ class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
     
     def getStressTangent(self, e):
         # return np.concatenate((self.getStress(e), symflatten(self.getTangent(e))))
-        return self.getStress(e), ft.sym_flatten_3x3_np(self.getTangent(e))
+        return self.getStress(e), ft.sym_flatten_3x3_np(self.getTangent(e)) # already in the mandel format
 
-    def getStressTangent_force(self, e):
+    def getStressTangent_force(self, e): # force to recompute
         self.setUpdateFlag(False)
         return self.getStressTangent(e)
     
