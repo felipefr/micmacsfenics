@@ -7,11 +7,15 @@ In this branch we aim to provide a general setting to include nonlinear analysis
  
 If this library has been useful for you, please the article in which this library is related with:
 
-@article{rocha2021deepbnd,
-  title={Deepbnd: a machine learning approach to enhance multiscale solid mechanics},
-  author={Rocha, Felipe and Deparis, Simone and Antolin, Pablo and Buffa, Annalisa},
-  journal={arXiv preprint arXiv:2110.11141},
-  year={2021}
+@article{Rocha2023,
+title = {DeepBND: A machine learning approach to enhance multiscale solid mechanics},
+journal = {Journal of Computational Physics},
+pages = {111996},
+year = {2023},
+issn = {0021-9991},
+doi = {https://doi.org/10.1016/j.jcp.2023.111996},
+url = {https://www.sciencedirect.com/science/article/pii/S0021999123000918},
+author = {Felipe Rocha and Simone Deparis and Pablo Antolin and Annalisa Buffa}
 }
 
 [![DOI](https://zenodo.org/badge/341954015.svg)](https://zenodo.org/badge/latestdoi/341954015)
