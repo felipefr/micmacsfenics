@@ -11,5 +11,5 @@ two-level finite element simulations (FE2) using computational homogenization.
 Copyright (c) 2022-2023, Felipe Rocha.
 See file LICENSE.txt for license information. 
 Please cite this work according to README.md.
-Please report all bugs and problems to <felipe.figueredo-rocha@ec-nantes.fr>, or <felipe.f.rocha@gmail.com>
+Please report all bugs and problems to <felipe.figueredo-rocha@ec-nantes.fr>, or <f.rocha.felipe@gmail.com>
 """
