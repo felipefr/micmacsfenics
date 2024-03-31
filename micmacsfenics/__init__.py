@@ -29,3 +29,6 @@
 # from .ddd.ddsearch_nnls import DDSearchNNLS
 # from .ddd.ddproblem_poisson_mixed import DDProblemPoissonMixed
 
+
+from .multiscale_model_fetricks.multiscale_model import multiscaleModel
+from .core.micro_constitutive_model_generic import MicroConstitutiveModelGeneric

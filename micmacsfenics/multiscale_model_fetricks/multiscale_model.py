@@ -31,9 +31,9 @@ class multiscaleModel(ft.materialModel):
         
         self.micromodels = micromodels
         self.mesh = W.mesh()
-        self.__createInternalVariables(W, Wtan, dxm)
+        self.create_internal_variables(W, Wtan, dxm)
 
-    def __createInternalVariables(self, W, Wtan, dxm):
+    def create_internal_variables(self, W, Wtan, dxm):
         self.stress = df.Function(W)
         self.strain = df.Function(W)
         self.tangent = df.Function(Wtan)
@@ -59,4 +59,8 @@ class multiscaleModel(ft.materialModel):
         self.projector_strain(strain_new) 
         self.update_stress_tangent()    
 
+    def stress_op(self, e):
+        pass
     
+    def param_parser(self, param):
+        pass
