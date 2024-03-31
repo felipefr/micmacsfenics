@@ -1,0 +1,9 @@
+Metadata-Version: 2.1
+Name: micmacsfenics
+Version: 0.1
+Summary: Easy Fe2 using Fenics
+Home-page: https://github.com/felipefr/micmacsfenics
+Author: Felipe Rocha
+Author-email: felipe.figueredo-rocha@u-pec.fr
+License: MIT License
+License-File: LICENSE
