@@ -5,6 +5,11 @@ This encompasses the implementation of non-standard types of boundary conditions
 
 In this branch we aim to provide a general setting to include nonlinear analysisincluding inelasticity, but so far solving the problems in hyperlastic (but small strain scenario)
  
+# Instalation
+If you want to keep track of files for uninstall reasons, do:
+python setup.py install --record files.txt
+xargs rm -rf < files.txt
+
 If this library has been useful for you, please the article in which this library is related with:
 
 @article{Rocha2023,
