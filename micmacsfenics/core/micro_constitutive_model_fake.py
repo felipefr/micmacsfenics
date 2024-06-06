@@ -35,9 +35,10 @@ class MicroConstitutiveModelFake: # Make it a abstract class (make it simpler)
     countStressCalls = 0
    
     def __init__(self, param, ndim = 2, tensor_encoding = 'mandel'):
-        nu, lamb, self.alpha = param
+        
         self.param = param
-        self.lame = youngPoisson2lame(nu, lamb)
+        self.lame = [param.mu_ref, param.lamb_ref]
+        self.alpha = param.alpha
         
         self.tensor_encoding = "mandel"
         self.ndim = ndim

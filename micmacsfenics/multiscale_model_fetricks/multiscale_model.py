@@ -27,12 +27,21 @@ comm_self = MPI.COMM_SELF
 
 class multiscaleModel(ft.materialModel):
     
-    def __init__(self, W, Wtan, dxm, micromodels):
+    def __init__(self, W, Wtan, dxm, micromodels=None):
         
-        self.micromodels = micromodels
         self.mesh = W.mesh()
         self.create_internal_variables(W, Wtan, dxm)
-
+        
+        if(micromodels):
+            self.micromodels = micromodels
+        else:
+            self.micromodels = self.ngauss*[None] # just a placeholder 
+        
+    
+    # afterward micromodel setting
+    def set_micromodel(self, micro_model, i):
+        self.micromodels[i] = micro_model
+        
     def create_internal_variables(self, W, Wtan, dxm):
         self.stress = df.Function(W)
         self.strain = df.Function(W)
