@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Oct 22 13:11:17 2022
+Created on Sat Jun  8 21:23:34 2024
+
+@author: felipe
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Feb  6 20:23:09 2023
 
 @author: felipe rocha
 
@@ -16,16 +24,14 @@ Please report all bugs and problems to <felipe.figueredo-rocha@ec-nantes.fr>, or
 
 import sys
 import numpy as np
-#import multiphenics as mp
 import dolfin as df
 from timeit import default_timer as timer
-import time
-from ufl import nabla_div, indices
 from functools import partial 
-
 import fetricks as ft
 
-class MicroConstitutiveModelFake: # Make it a abstract class (make it simpler)
+
+
+class MicroConstitutiveModelAbstract: # TODO derive it again from a base class
 
     # Counter of calls 
     countComputeFluctuations = 0
@@ -33,49 +39,63 @@ class MicroConstitutiveModelFake: # Make it a abstract class (make it simpler)
     countTangentCalls = 0
     countStressCalls = 0
    
-    def __init__(self, param, ndim = 2, tensor_encoding = 'mandel'):
-        
-        self.param = param
-        self.lame = [param.mu_ref, param.lamb_ref]
-        self.alpha = param.alpha
-        
+    def __init__(self, param):
+
+        self.gdim = param['gdim']
+        self.nvoigt = int(self.gdim*(self.gdim + 1)/2)
         self.tensor_encoding = "mandel"
-        self.ndim = ndim
-        self.strain_dim = int(self.ndim*(self.ndim + 1)/2)
-        self.tensor_encoding = tensor_encoding        
+        self.psi_mu = param['psi_mu']
+        self.bnd_model = param['bnd_model']
         
         self.isStressUpdated = False
         self.isTangentUpdated = False
         self.isFluctuationUpdated = False
         
-        # self.getStress = self.__computeStress
+        self.getStress = self.__computeStress
         self.getTangent = self.__computeTangent
-        
-        self.stresshom = np.zeros(self.strain_dim)
-        self.tangenthom = np.zeros((self.strain_dim,self.strain_dim))
 
+        self.declareAuxVariables(param)
+    
+    
+    # seems it is not working
+    def restart_counters(self):
+        self.countComputeFluctuations = 0
+        self.countComputeCanonicalProblem = 0
+        self.countTangentCalls = 0
+        self.countStressCalls = 0        
+    
+    def restart_initial_guess(self):
+        self.uh.vector().set_local(np.zeros(self.Uh.dim()))
+        
+    
     def setUpdateFlag(self, flag):
         self.setStressUpdateFlag(flag)
         self.setTangentUpdateFlag(flag)
         self.setFluctuationUpdateFlag(flag)
         
     def setStressUpdateFlag(self, flag):
-        pass
-        # if(flag):
-            # self.getStress = self.__returnStress
-        # else:
-            # self.getStress = self.__computeStress
+        if(flag):
+            self.getStress = self.__returnStress
+        else:
+            self.getStress = self.__computeStress
 
-    def getStress(self,e):
-        tr_e = ft.tr_mandel(e)
-        e2 = np.dot(e, e)
-        
-        # time.sleep(0.02)
-        
-        self.stresshom = self.lame[0]*(1 + self.alpha*tr_e**2)*tr_e*ft.Id_mandel_np + 2*self.lame[1]*(1 + self.alpha*e2)*e  
-        
+    
+    def getStressTangent(self, e):
+        # return np.concatenate((self.getStress(e), symflatten(self.getTangent(e))))
+        return self.getStress(e), ft.sym_flatten_3x3_np(self.getTangent(e)) # already in the mandel format
+
+    def getStressTangent_force(self, e): # force to recompute
+        self.setUpdateFlag(False)
+        return self.getStressTangent(e)
+    
+    def __returnTangent(self, e):
+        type(self).countTangentCalls = type(self).countTangentCalls + 1     
+        return self.tangenthom
+    
+    def __returnStress(self, e):
+        type(self).countStressCalls = type(self).countStressCalls + 1     
         return self.stresshom
-
+    
     def setTangentUpdateFlag(self, flag):
         if(flag):
             self.getTangent = self.__returnTangent 
@@ -85,37 +105,25 @@ class MicroConstitutiveModelFake: # Make it a abstract class (make it simpler)
     def setFluctuationUpdateFlag(self, flag):
         self.isFluctuationUpdated = flag
         
-    def getStressTangent(self, e):
-        # return np.concatenate((self.getStress(e), symflatten(self.getTangent(e))))
-        return self.getStress(e), ft.sym_flatten_3x3_np(self.getTangent(e))
-
-    def __returnTangent(self, e):
-        self.eps = e
-        type(self).countTangentCalls = type(self).countTangentCalls + 1     
-        return self.tangenthom
-    
-    def __returnStress(self, e):
-        self.eps = e
-        type(self).countStressCalls = type(self).countStressCalls + 1     
-        return self.stresshom
-
-    def __homogeniseTangent(self):
-        type(self).countComputeCanonicalProblem = type(self).countComputeCanonicalProblem + 1
-            
-    def __homogeniseStress(self):
+    def declareAuxVariables(self, param):
+        self.stresshom = np.zeros(self.nvoigt)
+        self.tangenthom = np.zeros((self.nvoigt,self.nvoigt))
         
-        tr_e = ft.tr_mandel(self.eps)
-        e2 = np.dot(self.eps, self.eps)
+
     
-        self.stresshom = self.lame[0]*(1 + self.alpha*tr_e**2)*tr_e*ft.Id_mandel_np + 2*self.lame[1]*(1 + self.alpha*e2)*self.eps   
+    def __homogeniseTangent(self):
+        pass
+        
+        
+    def __homogeniseStress(self):
+        pass
         
     def __computeFluctuations(self, e):
-        self.eps = e
         self.setFluctuationUpdateFlag(True)
         type(self).countComputeFluctuations = type(self).countComputeFluctuations + 1
 
+        
     def __computeStress(self, e):
-        self.eps = e
         if(not self.isFluctuationUpdated):
             self.__computeFluctuations(e)
     
@@ -124,8 +132,8 @@ class MicroConstitutiveModelFake: # Make it a abstract class (make it simpler)
     
         return self.__returnStress(e)
         
+    
     def __computeTangent(self, e):
-        self.eps = e
         
         if(not self.isFluctuationUpdated):
             self.__computeFluctuations(e)
@@ -134,3 +142,4 @@ class MicroConstitutiveModelFake: # Make it a abstract class (make it simpler)
         self.setTangentUpdateFlag(True)            
         
         return self.__returnTangent(e)
+        

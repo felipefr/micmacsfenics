@@ -60,13 +60,19 @@ class multiscaleModel(ft.materialModel):
     def tangent_op(self, de):
         return df.dot(ft.as_sym_tensor_3x3(self.tangent), de) 
 
-    def update_stress_tangent(self):
-        for s, t, e, m in zip(self.stress_array, self.tangent_array, self.strain_array, self.micromodels):
-            s[:], t[:] = m.getStressTangent_force(e)  
-            
-    def update(self, strain_new):
+ # is forced? force to update state even it is already updated
+    def update_stress_tangent(self, is_forced = True):
+        
+        if(is_forced):
+            for s, t, e, m in zip(self.stress_array, self.tangent_array, self.strain_array, self.micromodels):
+                s[:], t[:] = m.getStressTangent_force(e)  
+        else:
+            for s, t, e, m in zip(self.stress_array, self.tangent_array, self.strain_array, self.micromodels):
+                s[:], t[:] = m.getStressTangent(e)  
+
+    def update(self, strain_new, is_forced = True):
         self.projector_strain(strain_new) 
-        self.update_stress_tangent()    
+        self.update_stress_tangent(is_forced)    
 
     def stress_op(self, e):
         pass
