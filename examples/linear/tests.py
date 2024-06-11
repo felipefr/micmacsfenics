@@ -36,17 +36,16 @@ resultFolder = '../results/'
 
 def test_bndModel():
 
-    Lx, Ly, Nx, Ny, NxyMicro = 2.0, 0.5, 12, 4, 50
+    Lx, Ly, Nx, Ny, NxyMicro = 2.0, 0.5, 12, 4, 10
     singleScaleFile = resultFolder + "bar_single_scale.xdmf"
     multiScaleFile = resultFolder + "bar_multiscale_standalone_%s.xdmf"
     start = timer()
     print("simulating single scale")
-    os.system("python bar_single_scale.py %d %d %d %d" % (Lx, Ly, Nx, Ny))
+    os.system("python bar_single_scale.py {0} {1} {2} {3}".format(Lx, Ly, Nx, Ny))
     end = timer()
     print('finished in ', end - start)
 
-    # for bndModel in ['per', 'lin', 'MR', 'lag']:
-    for bndModel in ['lin']:
+    for bndModel in ['per', 'lin', 'MR', 'lag']:
         suffix = "{0} {1} {2} {3} {4} {5} > log_{3}.txt".format(Lx, Ly, Nx, Ny,
                                                         NxyMicro, bndModel)
 
@@ -69,8 +68,7 @@ def test_bndModel():
     error = {}
     ehtemp = df.Function(Uh)
 
-    # for bndModel in ['per', 'lin', 'MR', 'lag']:
-    for bndModel in ['lin']:
+    for bndModel in ['per', 'lin', 'MR', 'lag']:
         with df.XDMFFile(multiScaleFile % bndModel) as f:
             f.read_checkpoint(ehtemp, 'uh')
 
@@ -79,10 +77,18 @@ def test_bndModel():
 
         error[bndModel] = df.norm(ehtemp)
         print(error[bndModel])
-
+        
+    assert np.abs(error['lin'] - error['lag']) < 1e-12
+    assert np.abs(error['per'] - 0.006335438226062488) < 1e-12
+    assert np.abs(error['lin'] - 0.007944024190770883) < 1e-12
+    assert np.abs(error['MR'] - 0.0011758292419516655) < 1e-12
+    
+    
+    # supposely run with : Lx, Ly, Nx, Ny, NxyMicro = 2.0, 0.5, 12, 4, 10 
+    # see https://github.com/multiphenics/multiphenics/blob/master/tutorials/10_multiscale_examples/bar_multiscale.py
     # assert np.abs(error['lin'] - error['lag']) < 1e-12
     # assert np.abs(error['per'] - 0.006319071443377064) < 1e-12
-    assert np.abs(error['lin'] - 0.007901978018038507) < 1e-12
+    # assert np.abs(error['lin'] - 0.007901978018038507) < 1e-12
     # assert np.abs(error['MR'] - 0.0011744201374588351) < 1e-12
 
 

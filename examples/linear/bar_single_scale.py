@@ -22,7 +22,6 @@ right. We use an isotropic linear material, given two lamé parameters.
 import sys
 sys.path.append("/home/felipe/sources/fetricks")
 import dolfin as df
-import numpy as np
 from ufl import nabla_div
 import fetricks as ft
 
@@ -32,8 +31,9 @@ resultFolder = '../results/'
 if(len(sys.argv)>4):
     Lx = float(sys.argv[1])
     Ly = float(sys.argv[2])
-    Nx = int(sys.argv[1])
-    Ny = int(sys.argv[2])
+    Nx = int(sys.argv[3])
+    Ny = int(sys.argv[4])
+    print(Lx, Ly, Nx, Ny)
 else:    
     Lx = 2.0
     Ly = 0.5
@@ -80,11 +80,6 @@ uh = df.Function(Uh)
 
 # linear_solver ops: "superlu" or "mumps"
 df.solve(a == b, uh, bcs=bcL, solver_parameters={"linear_solver": "superlu"})
-
-# Save solution in VTK format
-# fileResults = df.XDMFFile(resultFolder + "bar_single_scale.xdmf")
-# fileResults.write_checkpoint(uh, 'u', 0)
-
 
 uh.rename("uh", ".")
 with df.XDMFFile (resultFolder + "bar_single_scale.xdmf",) as f:
