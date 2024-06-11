@@ -1,0 +1,385 @@
+Solving linear variational problem.
+time assembling system 0.20036996400085627
+time in solving system 0.3055525020008645
+time in solving system 0.07922428599886189
+time in solving system 0.04724856800021371
+time assembling system 0.2024873119989934
+time in solving system 0.2980018240014033
+time in solving system 0.08283285400102613
+time in solving system 0.04838340999958746
+time assembling system 0.19641964299989922
+time in solving system 0.3041676650009322
+time in solving system 0.08136557699981495
+time in solving system 0.04907186499985983
+time assembling system 0.197926823000671
+time in solving system 0.2972423640003399
+time in solving system 0.08137423700100044
+time in solving system 0.049237766999794985
+time assembling system 0.20033329899888486
+time in solving system 0.3037923679985397
+time in solving system 0.08102930700079014
+time in solving system 0.04711214199960523
+time assembling system 0.19856918299956305
+time in solving system 0.3013667320010427
+time in solving system 0.08310392599923944
+time in solving system 0.04899617499904707
+time assembling system 0.19526130899976124
+time in solving system 0.3046248979990196
+time in solving system 0.08117520400082867
+time in solving system 0.04740333900008409
+time assembling system 0.1980684869995457
+time in solving system 0.30095582700050727
+time in solving system 0.08259199600070133
+time in solving system 0.04874295400077244
+time assembling system 0.2270807610002521
+time in solving system 0.2966731840006105
+time in solving system 0.08211042100083432
+time in solving system 0.047546661999149364
+time assembling system 0.19727262900050846
+time in solving system 0.2946113879988843
+time in solving system 0.08175335099986114
+time in solving system 0.04713302600066527
+time assembling system 0.1964345409996895
+time in solving system 0.29593976300020586
+time in solving system 0.08150807800120674
+time in solving system 0.04714254600003187
+time assembling system 0.19979008700101986
+time in solving system 0.2979475840002124
+time in solving system 0.0828089539991197
+time in solving system 0.04983175900088099
+time assembling system 0.19665930299925094
+time in solving system 0.30164108099961595
+time in solving system 0.08090361799986567
+time in solving system 0.04778015800002322
+time assembling system 0.19709354599945073
+time in solving system 0.2949647810000897
+time in solving system 0.08172423599899048
+time in solving system 0.04706448599972646
+time assembling system 0.19590494399926683
+time in solving system 0.29667195299953164
+time in solving system 0.08729663099984464
+time in solving system 0.0471927680009685
+time assembling system 0.1956862960014405
+time in solving system 0.2979060859997844
+time in solving system 0.09118013400075142
+time in solving system 0.04850760499903117
+time assembling system 0.1978054200008046
+time in solving system 0.2970217469992349
+time in solving system 0.08754618400053005
+time in solving system 0.0482013309992908
+time assembling system 0.20019780399888987
+time in solving system 0.3005757850005466
+time in solving system 0.08112580799934221
+time in solving system 0.047079007999855094
+time assembling system 0.25366284799929417
+time in solving system 0.3019862410001224
+time in solving system 0.0864411120001023
+time in solving system 0.047719688998768106
+time assembling system 0.19541223000123864
+time in solving system 0.308766044998265
+time in solving system 0.08145955200052413
+time in solving system 0.0479959959993721
+time assembling system 0.1988934569999401
+time in solving system 0.3061094749991753
+time in solving system 0.07451795999986643
+time in solving system 0.04774323400124558
+time assembling system 0.19832220300122572
+time in solving system 0.30481347200111486
+time in solving system 0.08114791400112153
+time in solving system 0.04715202700026566
+time assembling system 0.1974483069989219
+time in solving system 0.30115183099951537
+time in solving system 0.08696221000172955
+time in solving system 0.0509143369999947
+time assembling system 0.1963977760005946
+time in solving system 0.30561060099898896
+time in solving system 0.08080669100127125
+time in solving system 0.047873239000182366
+time assembling system 0.19986600700030976
+time in solving system 0.29685193299883395
+time in solving system 0.08213838100164139
+time in solving system 0.048115862999111414
+time assembling system 0.1958634289985639
+time in solving system 0.2970940019986301
+time in solving system 0.08107428200128197
+time in solving system 0.047400313000252936
+time assembling system 0.1986283939986606
+time in solving system 0.3058390629994392
+time in solving system 0.08250029000009818
+time in solving system 0.049140426999656484
+time assembling system 0.19637046999923768
+time in solving system 0.3018986490005773
+time in solving system 0.08124072399914439
+time in solving system 0.04704495299847622
+time assembling system 0.1976798340001551
+time in solving system 0.29930502099887235
+time in solving system 0.08400602900110243
+time in solving system 0.04895454100005736
+time assembling system 0.2208320879999519
+time in solving system 0.30781593800020346
+time in solving system 0.08171749900066061
+time in solving system 0.0577305510014412
+time assembling system 0.19541684000068926
+time in solving system 0.29867218299841625
+time in solving system 0.08164432100056729
+time in solving system 0.047618231999877025
+time assembling system 0.21427364499868418
+time in solving system 0.33454936699854443
+time in solving system 0.08112751799853868
+time in solving system 0.04730100999950082
+time assembling system 0.1953737749990978
+time in solving system 0.31556992100013304
+time in solving system 0.08018648700090125
+time in solving system 0.04995824499928858
+time assembling system 0.1990424779996829
+time in solving system 0.3067239009997138
+time in solving system 0.08178588899863826
+time in solving system 0.04788902499967662
+time assembling system 0.19537271599983796
+time in solving system 0.3119135350007127
+time in solving system 0.08135168600165343
+time in solving system 0.04815472399968712
+time assembling system 0.19827208599963342
+time in solving system 0.35099598600027093
+time in solving system 0.08247501299956639
+time in solving system 0.04820751899933384
+time assembling system 0.19525936399986676
+time in solving system 0.3000805699994089
+time in solving system 0.08055823099857662
+time in solving system 0.04730387299969152
+time assembling system 0.19871420299932652
+time in solving system 0.2987367200003064
+time in solving system 0.0829611709996243
+time in solving system 0.04871897999873909
+time assembling system 0.19709681899985299
+time in solving system 0.35884839500067756
+time in solving system 0.055730484000378055
+time in solving system 0.046970877001513145
+time assembling system 0.19814169299934292
+time in solving system 0.29939665799975046
+time in solving system 0.08423192699956417
+time in solving system 0.047959310000806
+time assembling system 0.19652482099991175
+time in solving system 0.30047596400072507
+time in solving system 0.08095986799889943
+time in solving system 0.04671526200036169
+time assembling system 0.1961469420002686
+time in solving system 0.2996607209988724
+time in solving system 0.08210156399945845
+time in solving system 0.048170809999646735
+time assembling system 0.20036193600026309
+time in solving system 0.2981297619990073
+time in solving system 0.08084314100051415
+time in solving system 0.047489782999036834
+time assembling system 0.19662473399876035
+time in solving system 0.30008308600008604
+time in solving system 0.08894252100071753
+time in solving system 0.04786486200100626
+time assembling system 0.1965642969989858
+time in solving system 0.31798408400027256
+time in solving system 0.0841791849998117
+time in solving system 0.047866204999081674
+time assembling system 0.19706951199987088
+time in solving system 0.3063974490014516
+time in solving system 0.08158191100119438
+time in solving system 0.04763281099985761
+time assembling system 0.20510584699877654
+time in solving system 0.2967783000003692
+time in solving system 0.08129114899929846
+time in solving system 0.04677832299967122
+time assembling system 0.19723440699999628
+time in solving system 0.3149739889995544
+time in solving system 0.08076539499961655
+time in solving system 0.04693840499930957
+time assembling system 0.19847472899891727
+time in solving system 0.3072708399995463
+time in solving system 0.08473133799998323
+time in solving system 0.05065428899979452
+time assembling system 0.19765809600176
+time in solving system 0.2997175040000002
+time in solving system 0.080744130000312
+time in solving system 0.04841295600090234
+time assembling system 0.20360930800052301
+time in solving system 0.29541318900010083
+time in solving system 0.08843313100078376
+time in solving system 0.049832216998765944
+time assembling system 0.19801613600066048
+time in solving system 0.30640015400058473
+time in solving system 0.08738649800034182
+time in solving system 0.047476592000748497
+time assembling system 0.19880141400062712
+time in solving system 0.29735065000022587
+time in solving system 0.09007270999973116
+time in solving system 0.048437987999932375
+time assembling system 0.19729977999850234
+time in solving system 0.3377438739989884
+time in solving system 0.08133686899964232
+time in solving system 0.048222630999589455
+time assembling system 0.24762638799984416
+time in solving system 0.2967910600000323
+time in solving system 0.08520541500001855
+time in solving system 0.04818299500038847
+time assembling system 0.19929818000127852
+time in solving system 0.29811069700008375
+time in solving system 0.09702643700074987
+time in solving system 0.0466319110000768
+time assembling system 0.19526183500056504
+time in solving system 0.30533007699887094
+time in solving system 0.0857940759997291
+time in solving system 0.047969776000172715
+time assembling system 0.19654873000035877
+time in solving system 0.30338602300071216
+time in solving system 0.0817487180011085
+time in solving system 0.048096888000145555
+time assembling system 0.1949477529997239
+time in solving system 0.3030512150016875
+time in solving system 0.08078597299936519
+time in solving system 0.0471511690011539
+time assembling system 0.1989842149996548
+time in solving system 0.3055729039988364
+time in solving system 0.07489863999944646
+time in solving system 0.04685304800113954
+time assembling system 0.19995365599970683
+time in solving system 0.30561100500017346
+time in solving system 0.08488016099909146
+time in solving system 0.059968763000142644
+time assembling system 0.2562581889997091
+time in solving system 0.3474971409996215
+time in solving system 0.08633237899994128
+time in solving system 0.062242013000286533
+time assembling system 0.281479359999139
+time in solving system 0.3990413390001777
+time in solving system 0.08597416900011012
+time in solving system 0.06990476499959186
+time assembling system 0.24778079400130082
+time in solving system 0.30070579600032943
+time in solving system 0.08248490500045591
+time in solving system 0.04788387500047975
+time assembling system 0.19718200200077263
+time in solving system 0.4446800469995651
+time in solving system 0.08490553199953865
+time in solving system 0.06032268499984639
+time assembling system 0.2599171870006103
+time in solving system 0.3289181390009617
+time in solving system 0.06959891600126866
+time in solving system 0.04653122299896495
+time assembling system 0.19741872300073737
+time in solving system 0.29598969200014835
+time in solving system 0.08247413800017966
+time in solving system 0.048489638000319246
+time assembling system 0.1978353190006601
+time in solving system 0.30007087200101523
+time in solving system 0.08092236499942373
+time in solving system 0.04788308800016239
+time assembling system 0.1973848019988509
+time in solving system 0.32450947699908284
+time in solving system 0.06918194299942115
+time in solving system 0.046345856000698404
+time assembling system 0.19673397600126918
+time in solving system 0.29639830899941444
+time in solving system 0.08139599700007238
+time in solving system 0.04682971599868324
+time assembling system 0.19705892799902358
+time in solving system 0.29578774199944746
+time in solving system 0.08112183100092807
+time in solving system 0.047073626999917906
+time assembling system 0.19920230800016725
+time in solving system 0.3190732029997889
+time in solving system 0.06810975799999142
+time in solving system 0.04655212199941161
+time assembling system 0.1979302630006714
+time in solving system 0.30401981999966665
+time in solving system 0.08200568800020847
+time in solving system 0.04854981599964958
+time assembling system 0.19804816199939523
+time in solving system 0.2976979710001615
+time in solving system 0.08250429600047937
+time in solving system 0.048656093000317924
+time assembling system 0.1961027980014478
+time in solving system 0.31304551500033995
+time in solving system 0.08361644499927934
+time in solving system 0.04783891099941684
+time assembling system 0.20015586899899063
+time in solving system 0.29493407500012836
+time in solving system 0.08058886999970127
+time in solving system 0.04696280999996816
+time assembling system 0.1967438140000013
+time in solving system 0.3041634620003606
+time in solving system 0.08043264200023259
+time in solving system 0.046842667999953846
+time assembling system 0.19783008099875588
+time in solving system 0.30739175399867236
+time in solving system 0.08058176399936201
+time in solving system 0.050312438999753795
+time assembling system 0.19628139099950204
+time in solving system 0.3067361619996518
+time in solving system 0.08102089100066223
+time in solving system 0.046830327999487054
+time assembling system 0.20141833900015627
+time in solving system 0.29470701799982635
+time in solving system 0.0812953730001027
+time in solving system 0.04804755400073191
+time assembling system 0.19726125599845545
+time in solving system 0.31328745299833827
+time in solving system 0.08214411599874438
+time in solving system 0.047472816999288625
+time assembling system 0.19835059000070032
+time in solving system 0.29539022800054227
+time in solving system 0.08235723699908704
+time in solving system 0.04918882899983146
+time assembling system 0.1972742100006144
+time in solving system 0.3032697710004868
+time in solving system 0.08098595400042541
+time in solving system 0.04708260000006703
+time assembling system 0.19943010699898878
+time in solving system 0.30502130599961674
+time in solving system 0.08273497099980887
+time in solving system 0.04855592599960801
+time assembling system 0.19665121700018062
+time in solving system 0.30225965499994345
+time in solving system 0.08099903400034236
+time in solving system 0.04748947100051737
+time assembling system 0.19867358000010427
+time in solving system 0.29523254000014276
+time in solving system 0.08207118300015281
+time in solving system 0.047845091999988654
+time assembling system 0.1967925330009166
+time in solving system 0.3525112220013398
+time in solving system 0.08127150399923266
+time in solving system 0.0472163009999349
+time assembling system 0.19563789299900236
+time in solving system 0.2972573859988188
+time in solving system 0.08145883699944534
+time in solving system 0.047885161999147385
+time assembling system 0.19744722399991588
+time in solving system 0.301634040000863
+time in solving system 0.08116686399989703
+time in solving system 0.04669484599980933
+time assembling system 0.19784701900061918
+time in solving system 0.3196130880005512
+time in solving system 0.06948187799935113
+time in solving system 0.04627521500151488
+time assembling system 0.19704337700022734
+time in solving system 0.2964009850002185
+time in solving system 0.08203433900052914
+time in solving system 0.04781653799909691
+time assembling system 0.19778047599902493
+time in solving system 0.2955364579993329
+time in solving system 0.08208714299871644
+time in solving system 0.04770499500045844
+time assembling system 0.19654833099957614
+time in solving system 0.3159849120002036
+time in solving system 0.06956014400020649
+time in solving system 0.04643722999935562
+time assembling system 0.19864436900024884
+time in solving system 0.30392061500060663
+time in solving system 0.08797517799939669
+time in solving system 0.046908567999707884
+time assembling system 0.19791042500037292
+time in solving system 0.3007481259992346
+time in solving system 0.08102509600030317
+time in solving system 0.04764537300070515
+time assembling system 0.19523810099963157
+time in solving system 0.3216591469990817
+time in solving system 0.06921713799965801
+time in solving system 0.04661273000056099

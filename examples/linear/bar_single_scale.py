@@ -20,22 +20,23 @@ Problem in [0,Lx]x[0,Ly], homogeneous dirichlet on left and traction on the
 right. We use an isotropic linear material, given two lamé parameters.
 """
 import sys
+sys.path.append("/home/felipe/sources/fetricks")
 import dolfin as df
 import numpy as np
 from ufl import nabla_div
-sys.path.insert(0, '../core/')
-from fenicsUtils import symgrad
+import fetricks as ft
 
 resultFolder = '../results/'
 
 
-Lx = 2.0
-Ly = 0.5
-
-if(len(sys.argv)>2):
+if(len(sys.argv)>4):
+    Lx = float(sys.argv[1])
+    Ly = float(sys.argv[2])
     Nx = int(sys.argv[1])
     Ny = int(sys.argv[2])
-else:
+else:    
+    Lx = 2.0
+    Ly = 0.5
     Nx = 40
     Ny = 10
     
@@ -65,7 +66,7 @@ traction = df.Constant((0.0, ty))
 
 
 def sigma(u):
-    return lamb*nabla_div(u)*df.Identity(2) + 2*mu*symgrad(u)
+    return lamb*nabla_div(u)*df.Identity(2) + 2*mu*ft.symgrad(u)
 
 
 # Define variational problem
@@ -86,5 +87,5 @@ df.solve(a == b, uh, bcs=bcL, solver_parameters={"linear_solver": "superlu"})
 
 
 uh.rename("uh", ".")
-with df.XDMFFile(resultFolder + "bar_single_scale.xdmf") as f:
-    f.write(uh, 0.0)
+with df.XDMFFile (resultFolder + "bar_single_scale.xdmf",) as f:
+    f.write_checkpoint(uh, 'uh', 0.0)

@@ -25,11 +25,12 @@ PS: This is a single core implementation.
 """
 
 import sys
+sys.path.append("/home/felipe/sources/fetricks")
+sys.path.append("/home/felipe/sources/micmacsfenics")
 import dolfin as df
 import numpy as np
-sys.path.insert(0, '../core/')
-import micro_constitutive_model as mscm
-from fenicsUtils import symgrad_voigt
+import micmacsfenics as mm
+import fetricks as ft
 
 resultFolder = '../results/'
 
@@ -71,22 +72,23 @@ def getFactorBalls(seed=1):
     return fac
 
 
+Lx = float(sys.argv[1])
+Ly = float(sys.argv[2])
+Nx = int(sys.argv[3])
+Ny = int(sys.argv[4])
+NxMicro = NyMicro = int(sys.argv[5])
+bndModel = sys.argv[6]
+
 r0 = 0.3
 r1 = 0.5
-Lx = 2.0
-Ly = 0.5
-Nx = int(sys.argv[1])
-Ny = int(sys.argv[2])
-
 lamb_matrix = 1.0
 mu_matrix = 0.5
-NxMicro = NyMicro = int(sys.argv[3])
+
 LxMicro = LyMicro = 1.0
 contrast = 10.0
 
 ty = -0.01
 
-bndModel = sys.argv[4]
 
 # Create mesh and define function space
 mesh = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(Lx, Ly),
@@ -107,7 +109,7 @@ meshMicro = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(LxMicro, LyMicro),
 
 facs = [getFactorBalls(i) for i in range(nCells)]
 params = [[fac_i*lamb_matrix, fac_i*mu_matrix] for fac_i in facs]
-microModels = [mscm.MicroConstitutiveModel(meshMicro, pi, bndModel)
+microModels = [mm.MicroConstitutiveModel(meshMicro, pi, bndModel)
                for pi in params]
 
 Chom = myChom(microModels, degree=0)
@@ -121,7 +123,7 @@ traction = df.Constant((0.0, ty))
 # Define variational problem
 uh = df.TrialFunction(Uh)
 vh = df.TestFunction(Uh)
-a = df.inner(df.dot(Chom, symgrad_voigt(uh)), symgrad_voigt(vh))*df.dx
+a = df.inner(df.dot(Chom, ft.symgrad_voigt(uh)), ft.symgrad_voigt(vh))*df.dx
 b = df.inner(traction, vh)*ds(2)
 
 # Compute solution
@@ -131,7 +133,7 @@ df.solve(a == b, uh, bcL)
 # Save solution in VTK format
 solFile =  resultFolder + "bar_multiscale_standalone_{0}.xdmf".format(bndModel)
 fileResults = df.XDMFFile(solFile)
-fileResults.write_checkpoint(uh, 'u', 0)
+fileResults.write_checkpoint(uh, 'uh', 0)
 
 # # plot microstructures
 # fac_h = df.project(facs[0], df.FunctionSpace(meshMicro, 'CG', 1))
