@@ -22,11 +22,10 @@ Problem in [0,Lx]x[0,Ly], homogeneous dirichlet on left and traction on the
 right. We use an isotropic linear material, given two lamé parameters.
 """
 import sys
+sys.path.append("/home/felipe/sources/fetricks")
 import dolfin as df
-import numpy as np
 from ufl import nabla_div
-sys.path.insert(0, '../../core/')
-from fenicsUtils import symgrad
+import fetricks as ft
 from functools import partial 
 
 solver_parameters = {"nonlinear_solver": "newton",
@@ -34,12 +33,12 @@ solver_parameters = {"nonlinear_solver": "newton",
                                        "report": True,
                                        "error_on_nonconvergence": True}}
 
-resultFolder = './results/'
+resultFolder = '../results/'
 
 def getPsi(u, param):
     lamb, mu, alpha = param
     
-    e = symgrad(u)
+    e = ft.symgrad(u)
     tr_e = df.tr(e)
     e2 = df.inner(e,e)
     
@@ -47,15 +46,18 @@ def getPsi(u, param):
             mu*(e2 + 0.5*alpha*e2**2))
 
 
-Lx = 2.0
-Ly = 0.5
 
-if(len(sys.argv)>2):
-    Nx = int(sys.argv[1])
-    Ny = int(sys.argv[2])
-else:
-    Nx = 2  
-    Ny = 2
+if(len(sys.argv)>4):
+    Lx = float(sys.argv[1])
+    Ly = float(sys.argv[2])
+    Nx = int(sys.argv[3])
+    Ny = int(sys.argv[4])
+    print(Lx, Ly, Nx, Ny)
+else:    
+    Lx = 2.0
+    Ly = 0.5
+    Nx = 40
+    Ny = 10
     
 facAvg = 1.0  # roughly chosen to approx single scale to mulsticale results
 lamb = facAvg*1.0
@@ -101,10 +103,10 @@ solver.parameters.update(solver_parameters)
 solver.solve()
 
 # Save solution in VTK format
-# fileResults = df.XDMFFile(resultFolder + "bar_single_scale.xdmf")
-# fileResults.write_checkpoint(uh, 'u', 0)
+fileResults = df.XDMFFile(resultFolder + "bar_single_scale.xdmf")
+fileResults.write_checkpoint(uh, 'u', 0)
 
-uh.rename("uh", ".")
-with df.XDMFFile("bar_single_scale.xdmf") as f:
-    f.write(uh, 0.0)
+# uh.rename("uh", ".")
+# with df.XDMFFile("bar_single_scale.xdmf") as f:
+#     f.write(uh, 0.0)
 
