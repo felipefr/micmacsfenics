@@ -31,7 +31,7 @@ import fetricks as ft
 solver_parameters = {"nonlinear_solver": "newton",
                      "newton_solver": {"maximum_iterations": 20,
                                        "report": False,
-                                       "error_on_nonconvergence": True}}
+                                       "error_on_nonconvergence": False}}
 
 # diagonal + non_diagonal convention
 ind_sym_tensor = np.array([0, 4, 8, 5, 2, 1])

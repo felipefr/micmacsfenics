@@ -12,6 +12,7 @@ sys.path.append("/home/felipe/sources/micmacsfenics")
 import numpy as np
 import dolfin as df
 from fetricks import symgrad, tensor2mandel
+import fetricks as ft
 import micmacsfenics as mm
 from timeit import default_timer as timer
 
@@ -59,8 +60,8 @@ if(len(sys.argv)>4):
 else:    
     Lx = 2.0
     Ly = 0.5
-    Nx = 40
-    Ny = 10
+    Nx = 5
+    Ny = 3
     
 facAvg = 1.0  # roughly chosen to approx single scale to mulsticale results
 lamb = facAvg*1.0
@@ -130,8 +131,8 @@ microModels = [mm.MicroConstitutiveModelNonlinear(meshMicro, pi, bndModel)
 
 
 # ===================================================================================
-hom = mm.MultiscaleModelExpression(microModels, mesh, [])  
-# hom = hyperlasticityModelExpression(W, dxm, {'lamb' : lamb, 'mu': mu, 'alpha': alpha})
+# hom = mm.MultiscaleModelExpression(microModels, mesh, [])  
+hom = ft.hyperelasticModelExpression(mesh, {'lamb' : lamb, 'mu': mu, 'alpha': alpha})
 
 u = df.Function(Uh, name="Total displacement")
 du = df.Function(Uh, name="Iteration correction")
@@ -139,7 +140,7 @@ v = df.TestFunction(Uh)
 u_ = df.TrialFunction(Uh)
 
 a_Newton = df.inner(tensor2mandel(symgrad(u_)), hom.tangent_op(tensor2mandel(symgrad(v))) )*dxm
-res = -df.inner(tensor2mandel(symgrad(v)), hom.stress() )*dxm + F_ext(v)
+res = -df.inner(tensor2mandel(symgrad(v)), hom.stress )*dxm + F_ext(v)
 
 Nitermax, tol = 10, 1e-7  # parameters of the Newton-Raphson procedure
 
@@ -156,7 +157,7 @@ niter = 0
 while nRes/nRes0 > tol and niter < Nitermax:
     df.solve(A, du.vector(), Res)
     u.assign(u + du)
-    hom.updateStrain(tensor2mandel(symgrad(u)))
+    hom.update(tensor2mandel(symgrad(u)))
     A, Res = df.assemble_system(a_Newton, res, bc)
     nRes = Res.norm("l2")
     print(" Residual:", nRes)

@@ -7,17 +7,12 @@ Created on Tue Apr 19 14:24:12 2022
 """
 
 import sys
-import dolfin as df
-
+sys.path.append("/home/felipe/sources/fetricks")
+sys.path.append("/home/felipe/sources/micmacsfenics")
 import numpy as np
-
-sys.path.insert(0, '../../core/')
-sys.path.insert(0, '../../materials/')
-
-from micmacsfenics.core.micro_constitutive_model_nonlinear import MicroConstitutiveModelNonlinear
-
-from micmacsfenics.core.fenicsUtils import symgrad, tensor2mandel
-from multiscale_material_model import multiscaleMaterialModel
+import dolfin as df
+from fetricks import symgrad, tensor2mandel
+import micmacsfenics as mm
 from timeit import default_timer as timer
 
 df.parameters["form_compiler"]["representation"] = 'uflacs'
@@ -134,14 +129,14 @@ meshMicro = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(LxMicro, LyMicro),
 facs = [getFactorBalls(0) for i in range(nCells)]
 np.random.seed(0)
 params = [[fac_i*lamb_matrix, fac_i*mu_matrix, alpha] for fac_i in facs]
-microModels = [MicroConstitutiveModelNonlinear(meshMicro, pi, bndModel)
+microModels = [mm.MicroConstitutiveModelNonlinear(meshMicro, pi, bndModel)
                for pi in params]
 
 
 # ===================================================================================
 
 
-hom = multiscaleMaterialModel(microModels)
+hom = mm.MultiscaleModel(microModels, mesh, []) 
 hom.createInternalVariables(W, Wten, dxm)
 
 u = df.Function(Uh, name="Total displacement")

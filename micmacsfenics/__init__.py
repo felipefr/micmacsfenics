@@ -5,5 +5,6 @@ from .core.micro_constitutive_model_factorised import MicroConstitutiveModelFact
 from .core.micro_constitutive_model_monoscale import MicroConstitutiveModelMonoscale
 from .core.micro_constitutive_model import MicroConstitutiveModel
 from .core.micro_constitutive_model_nonlinear import MicroConstitutiveModelNonlinear
+from .core.micro_constitutive_model_nonlinear_opt import MicroConstitutiveModelNonlinearOpt
 from .multiscale_model_fetricks.multiscale_model import MultiscaleModel
 from .multiscale_model_fetricks.multiscale_model_expression import MultiscaleModelExpression
