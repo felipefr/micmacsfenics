@@ -21,17 +21,17 @@ import numpy as np
 import dolfin as df
 import fetricks as ft
 
-class multiscaleModelExpression(ft.materialModelExpression):
-    
-    def __init__(self, W, Wtan, dxm, micromodels):
+class MultiscaleModelExpression(ft.materialModelExpression):
+    def __init__(self, micromodels,  param, deg_stress = 0, dim_strain = 3):
         self.micromodels = micromodels
-        super().__init__(W, Wtan, dxm)
+        super().__init__(param, deg_stress, dim_strain)
     
     def pointwise_stress(self, e, cell = None): # elastic (I dont know why for the moment) # in mandel format        
         return self.micromodels[cell.index].getStress(e)
     
     def pointwise_tangent(self, e, cell = None): # elastic (I dont know why for the moment) # in mandel format
-        return self.micromodels[cell.index].getTangent(e).flatten()[ft.ind_sym_tensor_3x3]
+        print(self.micromodels[cell.index].getTangent(e).shape)
+        return df.sym_flatten_3x3_np(self.micromodels[cell.index].getTangent(e))
     
     def tangent_op(self, de):
         return df.dot(ft.as_sym_tensor_3x3(self.tangent), de) 

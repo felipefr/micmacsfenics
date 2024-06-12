@@ -16,10 +16,9 @@ Please report all bugs and problems to <felipe.figueredo-rocha@ec-nantes.fr>, or
 import dolfin as df
 import numpy as np
 
-from material_model_expression import materialModelExpression
-from micmacsfenics.core.fenicsUtils import (symgrad, tensor2mandel,  mandel2tensor, tr_mandel, Id_mandel_np)
+import micmacsfenics as mm 
 
-class multiscaleModelExpression(materialModelExpression):
+class MultiscaleModelExpression(mm.MaterialModelExpression):
     
     def __init__(self, W, dxm, micromodels):
         self.micromodels = micromodels

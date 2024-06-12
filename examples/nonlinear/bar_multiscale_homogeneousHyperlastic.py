@@ -7,17 +7,12 @@ Created on Tue Apr 19 14:24:12 2022
 """
 
 import sys
-import dolfin as df
-
+sys.path.append("/home/felipe/sources/fetricks")
+sys.path.append("/home/felipe/sources/micmacsfenics")
 import numpy as np
-
-sys.path.insert(0, '../../core/')
-sys.path.insert(0, '../../materials/')
-
-from micmacsfenics.core.micro_constitutive_model_nonlinear import MicroConstitutiveModelNonlinear
-
-from micmacsfenics.core.fenicsUtils import symgrad, tensor2mandel
-from multiscale_model_expression import multiscaleModelExpression
+import dolfin as df
+from fetricks import symgrad, tensor2mandel
+import micmacsfenics as mm
 from timeit import default_timer as timer
 
 df.parameters["form_compiler"]["representation"] = 'uflacs'
@@ -55,15 +50,17 @@ def getFactorBalls(seed=1):
     return fac
 
 
-Lx = 2.0
-Ly = 0.5
-
-if(len(sys.argv)>2):
-    Nx = int(sys.argv[1])
-    Ny = int(sys.argv[2])
-else:
-    Nx = 10
-    Ny = 5
+if(len(sys.argv)>4):
+    Lx = float(sys.argv[1])
+    Ly = float(sys.argv[2])
+    Nx = int(sys.argv[3])
+    Ny = int(sys.argv[4])
+    print(Lx, Ly, Nx, Ny)
+else:    
+    Lx = 2.0
+    Ly = 0.5
+    Nx = 40
+    Ny = 10
     
 facAvg = 1.0  # roughly chosen to approx single scale to mulsticale results
 lamb = facAvg*1.0
@@ -128,14 +125,12 @@ meshMicro = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(LxMicro, LyMicro),
 facs = [getFactorBalls(0) for i in range(nCells)]
 np.random.seed(0)
 params = [[fac_i*lamb_matrix, fac_i*mu_matrix, alpha] for fac_i in facs]
-microModels = [MicroConstitutiveModelNonlinear(meshMicro, pi, bndModel)
+microModels = [mm.MicroConstitutiveModelNonlinear(meshMicro, pi, bndModel)
                for pi in params]
 
 
 # ===================================================================================
-
-
-hom = multiscaleModelExpression(W, dxm, microModels)
+hom = mm.MultiscaleModelExpression(microModels, mesh, [])  
 # hom = hyperlasticityModelExpression(W, dxm, {'lamb' : lamb, 'mu': mu, 'alpha': alpha})
 
 u = df.Function(Uh, name="Total displacement")
@@ -143,8 +138,8 @@ du = df.Function(Uh, name="Iteration correction")
 v = df.TestFunction(Uh)
 u_ = df.TrialFunction(Uh)
 
-a_Newton = df.inner(tensor2mandel(symgrad(u_)), df.dot(hom.tangent, tensor2mandel(symgrad(v))) )*dxm
-res = -df.inner(tensor2mandel(symgrad(v)), hom.stress )*dxm + F_ext(v)
+a_Newton = df.inner(tensor2mandel(symgrad(u_)), hom.tangent_op(tensor2mandel(symgrad(v))) )*dxm
+res = -df.inner(tensor2mandel(symgrad(v)), hom.stress() )*dxm + F_ext(v)
 
 Nitermax, tol = 10, 1e-7  # parameters of the Newton-Raphson procedure
 

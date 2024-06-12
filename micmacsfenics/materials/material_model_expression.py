@@ -24,7 +24,7 @@ from micmacsfenics.core.fenicsUtils import LocalProjector
 
 from generic_gausspoint_expression import genericGaussPointExpression
     
-class materialModelExpression:
+class MaterialModelExpression:
     def __init__(self, W, dxm):
         self.strain = df.Function(W) 
         self.projector = LocalProjector(W, dxm)

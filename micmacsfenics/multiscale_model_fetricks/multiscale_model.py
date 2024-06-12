@@ -25,7 +25,7 @@ from mpi4py import MPI
 comm = MPI.COMM_WORLD
 comm_self = MPI.COMM_SELF
 
-class multiscaleModel(ft.materialModel):
+class MultiscaleModel(ft.materialModel):
     
     def __init__(self, W, Wtan, dxm, micromodels=None):
         
