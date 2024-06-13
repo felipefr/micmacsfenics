@@ -1,10 +1,13 @@
 # micmacsFenics
-Implementations using Fenics and Multiphenics to solve Computational Homogenisation problems. 
+FEniCSx-based implementation for multi-scale problems (FE2) and computational homogenisation. 
 
-This encompasses the implementation of non-standard types of boundary conditions, indeed general constraints. I also made use of the Multiphenics, that allows a simple of implementation for problems of multiples variables. In this case, we have the main variable and auxiliary Lagrange multipliers variables defined in some parts of the domain that encodes the variational equation that enforces the constraint weakly. 
+Currently, micmacsfenics is going through a complete factorization from the original library in legacy FEniCS. The main changes will be:
+- Unique way of doing things. Maybe too general, but unique.
+- Inelasticty using Mfront or dolfinx-external-operator (https://github.com/a-latyshev/)
+- Implementation of the generalised minimally contraint bc (https://doi.org/10.1016/j.ijsolstr.2023.112494)
+- Be the most flexible as possible concerning physics. 
+- Implementation of non-standard types of boundary conditions: periodic, minimally constraint in FEniCS.
 
-In this branch we aim to provide a general setting to include nonlinear analysisincluding inelasticity, but so far solving the problems in hyperlastic (but small strain scenario)
- 
 If this library has been useful for you, please the article in which this library is related with:
 
 @article{Rocha2023,
