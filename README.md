@@ -3,10 +3,11 @@ FEniCSx-based implementation for multi-scale problems (FE2) and computational ho
 
 Currently, micmacsfenics is going through a complete factorization from the original library in legacy FEniCS. The main changes will be:
 - Unique way of doing things. Maybe too general, but unique.
+- Use fetrics (https://github.com/felipefr/fetricks) as much as possible for general things, to keep micmacsfenics as compact as possible.
 - Inelasticty using Mfront or dolfinx-external-operator (https://github.com/a-latyshev/)
 - Implementation of the generalised minimally contraint bc (https://doi.org/10.1016/j.ijsolstr.2023.112494)
 - Be the most flexible as possible concerning physics. 
-- Implementation of non-standard types of boundary conditions: periodic, minimally constraint in FEniCS.
+- Implementation of non-standard types of boundary conditions: periodic, minimally constraint in FEniCSx (in legacy FEniCS this was already done.
 
 If this library has been useful for you, please the article in which this library is related with:
 
