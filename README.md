@@ -1,7 +1,7 @@
 # micmacsFenics
 FEniCSx-based implementation for multi-scale problems (FE2) and computational homogenisation. 
 
-Currently, micmacsfenics is going through a complete factorization from the original library in legacy FEniCS. The main changes will be:
+Currently, micmacsfenics is going through a complete factorization from the original library in legacy FEniCS. Please check the micmacsfenics_legacy branch for working version of the codes. The main changes will be:
 - Unique way of doing things. Maybe too general, but unique.
 - Use fetrics (https://github.com/felipefr/fetricks) as much as possible for general things, to keep micmacsfenics as compact as possible.
 - Inelasticty using Mfront or dolfinx-external-operator (https://github.com/a-latyshev/)
