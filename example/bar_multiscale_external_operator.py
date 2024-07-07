@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Sat Jul  6 23:23:42 2024
+
+@author: felipe
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Thu Jun 13 16:56:55 2024
 
 @author: felipe
@@ -37,7 +45,6 @@ from timeit import default_timer as timer
 from functools import partial 
 
 sys.path.append("/home/felipe/sources/fetricksx")
-sys.path.append("/home/felipe/sources/micmacsfenicsx/core")
 
 import basix
 import numpy as np
@@ -48,60 +55,22 @@ import ufl
 from mpi4py import MPI
 
 import fetricksx as ft
-from micro_model import MicroModel
-from micromacro import MicroMacro
 
+from external_operator import (
+    FEMExternalOperator,
+    evaluate_external_operators,
+    evaluate_operands,
+    replace_external_operators,
+)
 
-class CustomQuadratureSpace:
+# elastic parameters
+def getPsi(e, param):
+    tr_e = ft.tr_mandel(e)
+    e2 = ufl.inner(e, e)
+
+    lamb, mu, alpha = param
     
-    def __init__(self, mesh, dim, degree_quad = None):
-        self.degree_quad = degree_quad
-        self.mesh = mesh
-        self.basix_cell = self.mesh.basix_cell()
-        
-        self.dxm = ufl.Measure("dx", domain=self.mesh, metadata={"quadrature_degree": self.degree_quad, "quadrature_scheme": "default"})
-        self.W0e = basix.ufl.quadrature_element(self.basix_cell, degree=self.degree_quad, scheme = "default", value_shape= ())
-        self.We = basix.ufl.quadrature_element(self.basix_cell, degree=self.degree_quad, scheme = "default", value_shape = (dim,))
-        self.space = fem.functionspace(self.mesh, self.We)       
-        self.scalar_space = fem.functionspace(self.mesh, self.W0e)
-        basix_celltype = getattr(basix.CellType, self.mesh.topology.cell_type.name)
-        points, weights = basix.make_quadrature(basix_celltype, self.degree_quad)
-        self.eval_points = points
-        self.weights = weights
-
-
-
-def getMicroModel(mesh_micro_name= "../meshes/mesh_micro.xdmf"):
-        
-    # mesh_micro_name = 'meshes/mesh_micro.xdmf'
-    lamb_ref = 432.099
-    mu_ref = 185.185
-    contrast = 50
-    bndModel_micro = 'lin'
-    vf = 0.124858 # volume fraction of inclusions vf*c_i + (1-vf)*c_m
-    psi_mu = ft.psi_hookean_nonlinear_lame
-    alpha_micro_m = 10000.0
-    alpha_micro_i = 10000.0
-    # alpha_micro_m = 0.0
-    # alpha_micro_i = 0.0
-
-    lamb_micro_m = lamb_ref/( 1-vf + contrast*vf)
-    mu_micro_m = mu_ref/( 1-vf + contrast*vf)
-    lamb_micro_i = contrast*lamb_micro_m
-    mu_micro_i = contrast*mu_micro_m
-    
-    mesh_micro = ft.Mesh(mesh_micro_name)
-    
-    alpha_ = ft.create_piecewise_constant_field(mesh_micro, mesh_micro.markers, 
-                                               {0: alpha_micro_i, 1: alpha_micro_m})
-    lamb_ = ft.create_piecewise_constant_field(mesh_micro, mesh_micro.markers, 
-                                               {0: alpha_micro_i, 1: alpha_micro_m})
-    mu_ = ft.create_piecewise_constant_field(mesh_micro, mesh_micro.markers, 
-                                               {0: alpha_micro_i, 1: alpha_micro_m})
-    param_micro = {"lamb" : lamb_ , "mu": mu_ , "alpha" : alpha_}
-    psi_mu = partial(psi_mu, param = param_micro)
-        
-    return MicroModel(mesh_micro, psi_mu, [1])
+    return (0.5*lamb*(1.0 + 0.5*alpha*(tr_e**2))*(tr_e**2) + mu*(1 + 0.5*alpha*e2)*(e2))
 
     
 param={
@@ -122,8 +91,6 @@ param={
 'neumann': [],
 'msh_file' : "bar.msh",
 'out_file' : "bar_multiscale.xdmf",
-'msh_micro_file' : "./meshes/mesh_micro.msh",
-'msh_micro_out_file' : "./meshes/mesh_micro.xdmf",
 'create_mesh': True, 
 'solver_atol' : 1e-12,
 'solver_rtol' : 1e-12,
@@ -146,39 +113,8 @@ msh =  ft.Mesh(param['msh_file'], MPI.COMM_WORLD, gdim = gdim)
 
 lamb, mu, alpha = param['lamb'], param['mu'], param['alpha']
 material_param = [fem.Constant(msh,lamb), fem.Constant(msh,mu), fem.Constant(msh, alpha)]
-
-
+     
 Uh = fem.functionspace(msh, ("CG", param['deg_u'], (param['gdim'],)))
-
-
-# # create quadrature spaces: scalar, vectorial  (strain/stresses), and tensorial (tangents)
-# def create_quadrature_spaces_mechanics(mesh, deg_q, qdim):
-#     cell = mesh.ufl_cell()
-#     q = "Quadrature"
-#     QF = df.FiniteElement(q, cell, deg_q, quad_scheme="default")
-#     QV = df.VectorElement(q, cell, deg_q, quad_scheme="default", dim=qdim)
-#     QT = df.TensorElement(q, cell, deg_q, quad_scheme="default", shape=(qdim, qdim))
-#     return [df.FunctionSpace(mesh, Q) for Q in [QF, QV, QT]]
-
-n_strain = 3
-n_tan = 6
-W = CustomQuadratureSpace(msh, n_strain, degree_quad = 0)
-W0 = CustomQuadratureSpace(msh, 1, degree_quad = 0)
-Wtan = CustomQuadratureSpace(msh, n_tan, degree_quad = 0)
-
-ng = W.scalar_space.dofmap.index_map.size_global
-microModels = ng*[getMicroModel(param['msh_micro_file'])] # only valid because it's the same
-hom = MicroMacro(W, Wtan, W.dxm, microModels)
-
-dx = W.dxm
-stress, tang = hom.stress, hom.tangent_op
-
-def homogenisation_update(w, dw):
-    hom.update(ft.symgrad_mandel(w))
-    
-callbacks = [homogenisation_update]
-
-
 
 u = fem.Function(Uh)
 v = ufl.TestFunction(Uh)
@@ -192,14 +128,55 @@ for bc in param['dirichlet']:
 def F_ext(v):
     return sum([ ufl.inner(bc[2], v[bc[1]])*msh.ds(bc[0]) for bc in param['neumann']])
 
+# Wh = fem.functionspace(msh, ("CG", param['deg_u'], (param['gdim'],)))
+T = fem.Function(Uh)
+e = ft.symgrad_mandel(T)
+T.interpolate(lambda x: np.array([x[0] ** 2 + x[1], x[1]]))
+quadrature_degree = 2
+Qe = basix.ufl.quadrature_element(msh.topology.cell_name(), degree=quadrature_degree, value_shape=(3,))
+Q = fem.functionspace(msh, Qe)
+# dx = ufl.Measure("dx", metadata={"quadrature_scheme": "default", "quadrature_degree": quadrature_degree})
+q_ = FEMExternalOperator(T, e, function_space=Q)
+
+
 Celas = ft.Celas_mandel(param['lamb'], param['mu'])
 
 nstraindim = 3
+
+def q_impl(theta, g):
+    G = g.reshape((-1,  nstraindim))
+    output = G @ Celas
+    return output.reshape(-1)
+
+
+# def dqdT_impl(T, sigma):
+#     num_cells = T.shape[0]
+#     sigma_ = sigma.reshape((num_cells, -1, gdim))
+#     output = B * (k(T) ** 2)[:, :, np.newaxis] * sigma_
+#     return output.reshape(-1)
+
+
+def dqdsigma_impl(T, sigma):
+    output = np.zeros((T.shape[0]*T.shape[1], 9))
+    for i in range(len(output)):
+        output[i,:] = Celas.flatten()
+    return output.reshape(-1)
 
 eps_var = ufl.variable(ft.symgrad_mandel(u))
 psi = getPsi(eps_var, material_param)
 stress = ufl.diff(psi, eps_var)
 tangent = ufl.diff(stress, eps_var)
+
+
+def q_external(derivatives):
+    if derivatives == (0, 0):
+        return q_impl
+    elif derivatives == (1, 0):
+        return dqdsigma_impl
+    elif derivatives == (0, 1):
+        return dqdsigma_impl
+    else:
+        return NotImplementedError
 
 # res = ufl.inner(stress, ft.symgrad_mandel(v))*msh.dx - F_ext(v)
 # jac = ufl.inner(ufl.dot(tangent, ft.symgrad_mandel(u_)), ft.symgrad_mandel(v))*msh.dx
@@ -214,16 +191,17 @@ J = ufl.derivative(res, T, u_)
 # jac = ufl.inner(ufl.dot(tangent, ft.symgrad_mandel(u_)), ft.symgrad_mandel(v))*msh.dx
 
 
-neumann_term = sum([df.inner(df.Constant(value), v)*mesh.ds(flag) for value, flag in neumann])
+F_replaced, F_external_operators = replace_external_operators(res)
+J_expanded = ufl.algorithms.expand_derivatives(J)
+J_replaced, J_external_operators = replace_external_operators(J_expanded)
+evaluated_operands = evaluate_operands(F_external_operators)
+_ = evaluate_external_operators(F_external_operators, evaluated_operands)
 
-res = df.inner(stress , ft.symgrad_mandel(v), )*dx - neumann_term
-Jac = df.inner(tang(ft.symgrad_mandel(du)), ft.symgrad_mandel(v))*dx
-
-# other manner 
-u = df.Function(Uh)
-problem = ft.CustomNonlinearProblem(-res, u, bcs, Jac)
-solver = ft.CustomNonlinearSolver(problem, callbacks = callbacks)
-
+_ = evaluate_external_operators(J_external_operators, evaluated_operands)
+F_compiled = fem.form(F_replaced)
+J_compiled = fem.form(J_replaced)
+b_vector = fem.assemble_vector(F_compiled)
+A_matrix = fem.assemble_matrix(J_compiled)
 
 problem = fem.petsc.NonlinearProblem(F_compiled, T, bcs_D, J = J_compiled)
 
