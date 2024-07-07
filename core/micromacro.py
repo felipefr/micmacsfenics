@@ -40,33 +40,35 @@ class MicroMacro:
     
     def __init__(self, W, Wtan, dxm, micromodels=None):
         
-        self.mesh = W.mesh()
-        self.create_internal_variables(W, Wtan, dxm)
+        self.mesh = W.mesh
+        self.W = W
+        self.Wtan = Wtan
+        self.dxm = dxm 
+        self.size_tan = self.Wtan.space.num_sub_spaces
+        self.size_strain = self.W.space.num_sub_spaces
+        self.create_internal_variables()
         
         if(micromodels):
             self.micromodels = micromodels
         else:
-            self.micromodels = self.ngauss*[None] # just a placeholder 
+            self.micromodels = self.W.nqpts*[None] # just a placeholder 
         
     
     # afterward micromodel setting
     def set_micromodel(self, micro_model, i):
         self.micromodels[i] = micro_model
         
-    def create_internal_variables(self, W, Wtan, dxm):
-        self.stress = fem.Function(W)
-        self.strain = fem.Function(W)
-        self.tangent = fem.Function(Wtan)
+    def create_internal_variables(self):
+        # to do: avoid W.space by inheritance
+        self.stress = fem.Function(self.W.space)
+        self.strain = fem.Function(self.W.space)
+        self.tangent = fem.Function(self.Wtan.space)
         
-        self.size_tan = Wtan.num_sub_spaces()
-        self.size_strain = W.num_sub_spaces()
-        self.ngauss = int(W.dim()/self.size_strain)
-        
-        self.projector_strain = ft.LocalProjector(W, dxm, sol = self.strain)
+        # self.projector_strain = ft.LocalProjector(W, dxm, sol = self.strain)
                 
-        self.strain_array = self.strain.vector().vec().array.reshape( (self.ngauss, self.size_strain) )
-        self.stress_array = self.stress.vector().vec().array.reshape( (self.ngauss, self.size_strain))
-        self.tangent_array = self.tangent.vector().vec().array.reshape( (self.ngauss, self.size_tan))
+        self.strain_array = self.strain.x.array.reshape( (self.W.nq_mesh, self.size_strain) )
+        self.stress_array = self.stress.x.array.reshape( (self.W.nq_mesh, self.size_strain))
+        self.tangent_array = self.tangent.x.array.reshape( (self.W.nq_mesh, self.size_tan))
                 
     def tangent_op(self, de):
         return ufl.dot(ft.as_sym_tensor_3x3(self.tangent), de) 

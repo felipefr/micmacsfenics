@@ -42,18 +42,19 @@ from petsc4py.PETSc import ScalarType  # type: ignore
 import fetricksx as ft
 
 
-solver_parameters = {"nonlinear_solver": "newton",
-                     "newton_solver": {"maximum_iterations": 20,
-                                       "report": False,
-                                       "error_on_nonconvergence": True}}
+# solver_parameters = {"nonlinear_solver": "newton",
+#                      "newton_solver": {"maximum_iterations": 20,
+#                                        "report": False,
+#                                        "error_on_nonconvergence": True}}
 
 class MicroModel:
 
-    def __init__(self, mesh, psi_mu, bnd_flags):
+    def __init__(self, mesh, psi_mu, bnd_flags, solver_param=None):
 
         self.mesh = mesh
         self.tdim = self.mesh.topology.dim
-        self.nmandel = int(self.tdim*(self.tdim + 1)/2)        
+        self.nmandel = int(self.tdim*(self.tdim + 1)/2)   
+        self.solver_param = solver_param
         
         self.psi_mu = psi_mu
         self.Uh = fem.functionspace(self.mesh, ("CG", 1, (self.tdim,)))
@@ -112,31 +113,19 @@ class MicroModel:
         self.Res = ufl.inner(self.sigmu , ft.symgrad_mandel(vh))*dy 
         self.Jac = ufl.inner(ufl.dot( self.Cmu, ft.symgrad_mandel(duh)), ft.symgrad_mandel(vh))*dy
         
-        self.microproblem = ufl.NonlinearVariationalProblem(self.Res, uh, self.bcD, self.Jac)
-        self.microsolver = ufl.NonlinearVariationalSolver(self.microproblem)
-        self.microsolver.parameters.update(solver_parameters)
     
+        self.microproblem = fem.petsc.NonlinearProblem(self.Res, uh, self.bcD, self.Jac)
+        self.microsolver = dolfinx.nls.petsc.NewtonSolver(self.mesh.comm, self.microproblem)
+        self.microsolver.atol = self.solver_param['atol']
+        self.microsolver.rtol = self.solver_param['rtol']    
     
     def setCanonicalproblem(self):
         dy, vh = self.dy, self.vh
-                 
-        # negative because 
         self.RHS_can = -ufl.inner(ufl.dot( self.Cmu, self.Eps_kl), ft.symgrad_mandel(vh))*dy 
+        self.solver_can = ft.CustomLinearSolver(self.Jac, self.RHS_can, self.ukl, self.bcD)
         
-        self.Acan = ufl.PETScMatrix()
-        self.bcan = ufl.PETScVector()
-        self.solver_can = ufl.PETScLUSolver()
-        
-    
     def __homogeniseTangent(self):
-        
-        # print("index" , epsMacro)
-    
-        dy, vol, Eps_kl, Cmu, ukl = self.dy, self.vol, self.Eps_kl, self.Cmu, self.ukl
-        
-        ufl.assemble(self.Jac, tensor = self.Acan)
-        self.bcD.apply(self.Acan)
-                        
+        self.solver_can.assembly_lhs()
         self.tangenthom.fill(0.0)
         
         unit_vec = np.zeros(self.nmandel)
@@ -144,14 +133,14 @@ class MicroModel:
         for i in range(self.nmandel):
             
             unit_vec[i] = 1.0
-            Eps_kl.assign(fem.Constant(self.mesh, unit_vec))
+            self.Eps_kl.assign(fem.Constant(self.mesh, unit_vec))
             
-            ufl.assemble(self.RHS_can, tensor = self.bcan)
-            self.bcD.apply(self.bcan)
-    
-            self.solver_can.solve(self.Acan, ukl.vector(), self.bcan)
+            self.solver_can.assembly_rhs()
+            self.solver_can.solve()
         
-            self.tangenthom[i,:] += ft.Integral(ufl.dot(Cmu, Eps_kl +  ft.symgrad_mandel(ukl)) , dy, ((self.nmandel,)))/vol
+            self.tangenthom[i,:] += (1.0/self.vol)*ft.Integral(
+                ufl.dot(self.Cmu, self.Eps_kl +  ft.symgrad_mandel(self.ukl)) , 
+                self.dy, ((self.nmandel,)))
             
             unit_vec[i] = 0.0
             

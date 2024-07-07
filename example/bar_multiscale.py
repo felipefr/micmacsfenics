@@ -68,40 +68,42 @@ class CustomQuadratureSpace:
         points, weights = basix.make_quadrature(basix_celltype, self.degree_quad)
         self.eval_points = points
         self.weights = weights
+        self.nq_cell = len(self.eval_points) # number of quadrature points per cell 
+        self.nq_mesh = self.mesh.num_cells*self.nq_cell # number of quadrature points 
 
 
 
-def getMicroModel(mesh_micro_name= "../meshes/mesh_micro.xdmf"):
+def getMicroModel(param):
         
-    # mesh_micro_name = 'meshes/mesh_micro.xdmf'
-    lamb_ref = 432.099
-    mu_ref = 185.185
-    contrast = 50
-    bndModel_micro = 'lin'
-    vf = 0.124858 # volume fraction of inclusions vf*c_i + (1-vf)*c_m
-    psi_mu = ft.psi_hookean_nonlinear_lame
-    alpha_micro_m = 10000.0
-    alpha_micro_i = 10000.0
+    mesh_micro_name = param['msh_file']
+    lamb_ref = param['lamb_ref']
+    mu_ref = param['mu_ref']
+    contrast = param['contrast']
+#    bnd = param['bnd']
+    vf = param['vf'] # volume fraction of inclusions vf*c_i + (1-vf)*c_m
+    psi_mu = param['psi_mu']
+    alpha_m = param['alpha_m']
+    alpha_i = param['alpha_m']
     # alpha_micro_m = 0.0
     # alpha_micro_i = 0.0
 
-    lamb_micro_m = lamb_ref/( 1-vf + contrast*vf)
-    mu_micro_m = mu_ref/( 1-vf + contrast*vf)
-    lamb_micro_i = contrast*lamb_micro_m
-    mu_micro_i = contrast*mu_micro_m
+    lamb_m = lamb_ref/( 1-vf + contrast*vf)
+    mu_m = mu_ref/( 1-vf + contrast*vf)
+    lamb_i = contrast*lamb_m
+    mu_i = contrast*mu_m
     
     mesh_micro = ft.Mesh(mesh_micro_name)
     
     alpha_ = ft.create_piecewise_constant_field(mesh_micro, mesh_micro.markers, 
-                                               {0: alpha_micro_i, 1: alpha_micro_m})
+                                               {0: alpha_i, 1: alpha_m})
     lamb_ = ft.create_piecewise_constant_field(mesh_micro, mesh_micro.markers, 
-                                               {0: alpha_micro_i, 1: alpha_micro_m})
+                                               {0: lamb_i, 1: lamb_m})
     mu_ = ft.create_piecewise_constant_field(mesh_micro, mesh_micro.markers, 
-                                               {0: alpha_micro_i, 1: alpha_micro_m})
+                                               {0: mu_i, 1: mu_m})
     param_micro = {"lamb" : lamb_ , "mu": mu_ , "alpha" : alpha_}
     psi_mu = partial(psi_mu, param = param_micro)
         
-    return MicroModel(mesh_micro, psi_mu, [1])
+    return MicroModel(mesh_micro, psi_mu, [1], param['solver'])
 
     
 param={
@@ -122,11 +124,22 @@ param={
 'neumann': [],
 'msh_file' : "bar.msh",
 'out_file' : "bar_multiscale.xdmf",
-'msh_micro_file' : "./meshes/mesh_micro.msh",
-'msh_micro_out_file' : "./meshes/mesh_micro.xdmf",
 'create_mesh': True, 
 'solver_atol' : 1e-12,
 'solver_rtol' : 1e-12,
+'micro_param': {
+    'msh_file' : "./meshes/mesh_micro.msh",
+    'msh_out_file' : "./meshes/mesh_micro.xdmf",
+    'lamb_ref' : 432.099,
+    'mu_ref' : 185.185,
+    'contrast' : 50,
+    'bnd' : 'lin',
+    'vf' : 0.124858,
+    'psi_mu' : ft.psi_hookean_nonlinear_lame,
+    'alpha_m' : 10000.0,
+    'alpha_i' : 10000.0,
+    'solver': {'atol' : 1e-12, 'rtol' : 1e-12}
+    }
 }
 
 # for dirichlet and neumann: tuple of (physical group tag, direction, value)
@@ -167,11 +180,12 @@ W0 = CustomQuadratureSpace(msh, 1, degree_quad = 0)
 Wtan = CustomQuadratureSpace(msh, n_tan, degree_quad = 0)
 
 ng = W.scalar_space.dofmap.index_map.size_global
-microModels = ng*[getMicroModel(param['msh_micro_file'])] # only valid because it's the same
+# only valid because it's the same RVE
+microModels = ng*[getMicroModel(param['micro_param'])] 
 hom = MicroMacro(W, Wtan, W.dxm, microModels)
 
 dx = W.dxm
-stress, tang = hom.stress, hom.tangent_op
+stress, tangent = hom.stress, hom.tangent_op
 
 def homogenisation_update(w, dw):
     hom.update(ft.symgrad_mandel(w))
@@ -196,32 +210,12 @@ Celas = ft.Celas_mandel(param['lamb'], param['mu'])
 
 nstraindim = 3
 
-eps_var = ufl.variable(ft.symgrad_mandel(u))
-psi = getPsi(eps_var, material_param)
-stress = ufl.diff(psi, eps_var)
-tangent = ufl.diff(stress, eps_var)
-
-# res = ufl.inner(stress, ft.symgrad_mandel(v))*msh.dx - F_ext(v)
-# jac = ufl.inner(ufl.dot(tangent, ft.symgrad_mandel(u_)), ft.symgrad_mandel(v))*msh.dx
-
-q_.external_function = q_external
-
-res = ufl.inner(q_, ft.symgrad_mandel(v))*msh.dx - F_ext(v)
-J = ufl.derivative(res, T, u_)
-# jac = ufl.inner(ufl.dot(tangent, ft.symgrad_mandel(u_)), ft.symgrad_mandel(v))*msh.dx
-
-# res = ufl.inner(stress, ft.symgrad_mandel(v))*msh.dx - F_ext(v)
-# jac = ufl.inner(ufl.dot(tangent, ft.symgrad_mandel(u_)), ft.symgrad_mandel(v))*msh.dx
-
-
-neumann_term = sum([df.inner(df.Constant(value), v)*mesh.ds(flag) for value, flag in neumann])
-
-res = df.inner(stress , ft.symgrad_mandel(v), )*dx - neumann_term
-Jac = df.inner(tang(ft.symgrad_mandel(du)), ft.symgrad_mandel(v))*dx
+res = ufl.inner(stress, ft.symgrad_mandel(v))*msh.dx - F_ext(v)
+jac = ufl.inner(tangent(ft.symgrad_mandel(u_)), ft.symgrad_mandel(v))*msh.dx
 
 # other manner 
-u = df.Function(Uh)
-problem = ft.CustomNonlinearProblem(-res, u, bcs, Jac)
+u = fem.Function(Uh)
+problem = ft.CustomNonlinearProblem(-res, u, bcs, jac)
 solver = ft.CustomNonlinearSolver(problem, callbacks = callbacks)
 
 
