@@ -27,6 +27,7 @@ import dolfin as df
 from ufl import nabla_div
 import fetricks as ft
 from functools import partial 
+import numpy as np
 
 solver_parameters = {"nonlinear_solver": "newton",
                      "newton_solver": {"maximum_iterations": 20,
@@ -60,14 +61,14 @@ else:
     Ny = 10
     
 facAvg = 1.0  # roughly chosen to approx single scale to mulsticale results
-lamb = facAvg*1.0
-mu = facAvg*0.5
-alpha = 0.0
+lamb = 10.0
+mu = 5.0
+alpha = 100.0
 ty = -0.01
 
 # Create mesh and define function space
 mesh = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(Lx, Ly),
-                        Nx, Ny, "right/left")
+                        Nx, Ny, "Right")
 
 Uh = df.VectorFunctionSpace(mesh, "Lagrange", 1)
 
@@ -103,10 +104,12 @@ solver.parameters.update(solver_parameters)
 solver.solve()
 
 # Save solution in VTK format
-fileResults = df.XDMFFile(resultFolder + "bar_single_scale.xdmf")
-fileResults.write_checkpoint(uh, 'u', 0)
+# fileResults = df.XDMFFile(resultFolder + "bar_single_scale.xdmf")
+# fileResults.write_checkpoint(uh, 'u', 0)
 
-# uh.rename("uh", ".")
-# with df.XDMFFile("bar_single_scale.xdmf") as f:
-#     f.write(uh, 0.0)
+print(np.linalg.norm(uh.vector().get_local()))
+
+uh.rename("uh", ".")
+with df.XDMFFile("bar_single_scale.xdmf") as f:
+    f.write(uh, 0.0)
 

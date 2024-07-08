@@ -136,15 +136,15 @@ microModels = [mm.MicroConstitutiveModelNonlinear(meshMicro, pi, bndModel)
 # ===================================================================================
 
 
-hom = mm.MultiscaleModel(microModels, mesh, []) 
-hom.createInternalVariables(W, Wten, dxm)
+hom = mm.MultiscaleModel(W, Wten, dxm, microModels) 
+hom.create_internal_variables(W, Wten, dxm)
 
 u = df.Function(Uh, name="Total displacement")
 du = df.Function(Uh, name="Iteration correction")
 v = df.TestFunction(Uh)
 u_ = df.TrialFunction(Uh)
 
-hom.update_alpha(tensor2mandel(symgrad(u)))
+hom.update(tensor2mandel(symgrad(u)))
 
 a_Newton = df.inner(tensor2mandel(symgrad(u_)), hom.tangent(tensor2mandel(symgrad(v))) )*dxm
 res = -df.inner(tensor2mandel(symgrad(v)), hom.sig )*dxm + F_ext(v)
