@@ -61,4 +61,4 @@ Plane Surface(4) = {6};
 
 Physical Surface(0) = {4};
 Physical Surface(1) = {3};
-Physical Line(2) = {l0,l1,l2,l3};
+Physical Line(0) = {l0,l1,l2,l3};

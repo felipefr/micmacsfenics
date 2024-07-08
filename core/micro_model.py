@@ -61,46 +61,28 @@ class MicroModel:
         uD = np.array([0.0,0.0],dtype=ScalarType)
         
         self.bcD = [ ft.dirichletbc(uD, flag, self.Uh) for flag in bnd_flags]
-        
-        self.getStress = self.__computeStress
-        self.getTangent = self.__computeTangent
-
-        self.declareAuxVariables()
-        self.setMicroproblem()
-        self.setCanonicalproblem()   
+    
+        self.set_aux_variables()
+        self.set_microproblem()
     
     def restart_initial_guess(self):
-        self.uh.vector().set_local(np.zeros(self.Uh.dim()))
+        self.uh.x.array[:] = 0.0
         
-    def getStressTangent(self, e):
-        # return np.concatenate((self.getStress(e), symflatten(self.getTangent(e))))
-        return self.getStress(e), ft.sym_flatten_3x3_np(self.getTangent(e)) # already in the mandel format
-
-    def getStressTangent_force(self, e): # force to recompute
-        self.setUpdateFlag(False)
-        return self.getStressTangent(e)
-    
+    def set_aux_variables(self):    
+        self.dy = self.mesh.dx
+        self.vol = ft.integral(fem.Constant(self.mesh,1.0), self.dy, self.mesh, ())
+        self.inv_vol = self.vol**-1
         
-    def declareAuxVariables(self):
-    
-        self.dy = ufl.Measure('dx', self.mesh)
-        # self.vol = ufl.assemble(ufl.Constant(1.0)*self.dy)
-        self.vol = 1.0 # todo commet above
         self.y = ufl.SpatialCoordinate(self.mesh)
-        self.Eps_array = np.array([0., 0., 0.], dtype = ScalarType)
-        self.Eps_kl_array = np.array([0., 0., 0.], dtype = ScalarType)
-        self.Eps = fem.Constant(self.mesh, self.Eps_array)  # just placeholder
-        self.Eps_kl = fem.Constant(self.mesh, self.Eps_kl_array)  # just placeholder
+        self.Eps = fem.Constant(self.mesh, np.array([0., 0., 0.], dtype = ScalarType))  # just placeholder
+        self.Eps_kl = fem.Constant(self.mesh, np.array([0., 0., 0.], dtype = ScalarType))  # just placeholder
         
         self.duh = ufl.TrialFunction(self.Uh)            # Incremental displacement
         self.vh  = ufl.TestFunction(self.Uh)             # Test function
         self.uh  = fem.Function(self.Uh)                 # Displacement from previous iteration
         self.ukl = fem.Function(self.Uh)
         
-        self.stresshom = np.zeros(self.nmandel)
-        self.tangenthom = np.zeros((self.nmandel,self.nmandel))
-        
-    def setMicroproblem(self):
+    def set_microproblem(self):
         
         dy, Eps = self.dy, self.Eps
         uh, vh, duh = self.uh, self.vh, self.duh
@@ -110,63 +92,45 @@ class MicroModel:
         
         self.sigmu, self.Cmu = ft.get_stress_tang_from_psi(self.psi_mu, eps_var, eps_var) 
         
-        self.Res = ufl.inner(self.sigmu , ft.symgrad_mandel(vh))*dy 
         self.Jac = ufl.inner(ufl.dot( self.Cmu, ft.symgrad_mandel(duh)), ft.symgrad_mandel(vh))*dy
         
-    
-        self.microproblem = fem.petsc.NonlinearProblem(self.Res, uh, self.bcD, self.Jac)
-        self.microsolver = dolfinx.nls.petsc.NewtonSolver(self.mesh.comm, self.microproblem)
-        self.microsolver.atol = self.solver_param['atol']
-        self.microsolver.rtol = self.solver_param['rtol']    
-    
-    def setCanonicalproblem(self):
-        dy, vh = self.dy, self.vh
-        self.RHS_can = -ufl.inner(ufl.dot( self.Cmu, self.Eps_kl), ft.symgrad_mandel(vh))*dy 
-        self.solver_can = ft.CustomLinearSolver(self.Jac, self.RHS_can, self.ukl, self.bcD)
+        # generic residual for either fluctuation and canonical problem
+        self.flag_linres = fem.Constant(self.mesh, 0.0)
+        self.flag_nonlinres = fem.Constant(self.mesh, 1.0)
+        r = self.flag_nonlinres*self.sigmu + self.flag_linres*ufl.dot( self.Cmu, self.Eps_kl)
         
-    def __homogeniseTangent(self):
-        self.solver_can.assembly_lhs()
-        self.tangenthom.fill(0.0)
-        
-        unit_vec = np.zeros(self.nmandel)
+        self.Res = ufl.inner(r , ft.symgrad_mandel(vh))*dy
+                
+        self.microproblem = ft.CustomNonlinearProblem(self.Res, uh, self.bcD, self.Jac)
+        self.microsolver = ft.CustomNonlinearSolver(self.microproblem)
+    
+    def get_stress_tangent(self):
+        return self.homogenise_stress(), self.homogenise_tangent()
+
+    def homogenise_tangent(self):
+        self.flag_nonlinres.value = 0.0
+        self.flag_linres.value = 1.0
+        tangenthom = np.zeros((self.nmandel,self.nmandel))
+        stress_kl = ufl.dot(self.Cmu, self.Eps_kl +  ft.symgrad_mandel(self.microsolver.tangent_problem.u))
         
         for i in range(self.nmandel):
-            
-            unit_vec[i] = 1.0
-            self.Eps_kl.assign(fem.Constant(self.mesh, unit_vec))
-            
-            self.solver_can.assembly_rhs()
-            self.solver_can.solve()
+            self.Eps_kl.value[i] = 1.0
+            self.microsolver.tangent_problem.assemble_rhs()
+            self.microsolver.tangent_problem.solve_system()
+            tangenthom[i,:] = self.inv_vol*ft.integral(stress_kl, self.dy, self.mesh, ((self.nmandel,)))
+            self.Eps_kl.value[i] = 0.0
         
-            self.tangenthom[i,:] += (1.0/self.vol)*ft.Integral(
-                ufl.dot(self.Cmu, self.Eps_kl +  ft.symgrad_mandel(self.ukl)) , 
-                self.dy, ((self.nmandel,)))
-            
-            unit_vec[i] = 0.0
-            
-    def __homogeniseStress(self):
-        self.stresshom = ft.Integral(self.sigmu, self.dy, (self.nmandel,))/self.vol
+        return ft.sym_flatten_3x3_np(tangenthom)
+    
+    def homogenise_stress(self):
+        return self.inv_vol*ft.integral(self.sigmu, self.dy, self.mesh, (self.nmandel,))
         
-    def __computeFluctuations(self, e):
+    def solve_microproblem(self, e):
+        self.flag_nonlinres.value = 1.0
+        self.flag_linres.value = 0.0
         self.restart_initial_guess()
-        self.Eps.assign(fem.Constant(self.mesh, e))
+        self.Eps.value[:] = e[:]
         self.microsolver.solve()
         
-    def __computeStress(self, e):
-        if(not self.isFluctuationUpdated):
-            self.__computeFluctuations(e)
-    
-        self.__homogeniseStress()
-    
-        return self.__returnStress(e)
-        
-    
-    def __computeTangent(self, e):
-        
-        if(not self.isFluctuationUpdated):
-            self.__computeFluctuations(e)
-            
-        self.__homogeniseTangent()
-        
-        return self.__returnTangent(e)
+
         

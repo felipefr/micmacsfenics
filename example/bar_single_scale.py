@@ -62,10 +62,10 @@ param={
 'ly' : 0.5,
 'nx' : 40, 
 'ny' : 10, 
-'lamb': 1.0,
-'mu' : 0.5,
-'alpha' : 0.0,
-'ty' : -0.005,
+'lamb': 10.0,
+'mu' : 5.0,
+'alpha' : 100.0,
+'ty' : -0.01,
 'clamped_bc' : 4, 
 'load_bc' : 2,
 'deg_u' : 1,
@@ -90,7 +90,7 @@ param['neumann'].append((param['load_bc'], 1, param['ty']))
 gdim = param['gdim']
 if(param['create_mesh']):
     ft.generate_rectangle_msh(param['msh_file'], 0.0, 0.0, param['lx'], param['ly'],
-                              param['nx'], param['ny'])
+                              param['nx'], param['ny'], 'AlternateRight')
     
 msh =  ft.Mesh(param['msh_file'], MPI.COMM_WORLD, gdim = gdim)
 
