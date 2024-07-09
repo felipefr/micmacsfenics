@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun 13 16:56:55 2024
-
-@author: felipe
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
 @author: felipe rocha
+Created on Thu Jun 13 16:56:55 2024
 
 This file is part of micmacsfenics, a FEniCs-based implementation of 
 two-level finite element simulations (FE2) using computational homogenization.
@@ -37,7 +30,7 @@ from timeit import default_timer as timer
 from functools import partial 
 
 sys.path.append("/home/felipe/sources/fetricksx")
-sys.path.append("/home/felipe/sources/micmacsfenicsx/core")
+sys.path.append("/home/felipe/sources/micmacsfenicsx/")
 
 import basix
 import numpy as np
@@ -48,8 +41,7 @@ import ufl
 from mpi4py import MPI
 
 import fetricksx as ft
-from micro_model import MicroModel
-from micromacro import MicroMacro
+import micmacsfenicsx as mm
 
 def getMicroModel(param):
         
@@ -79,14 +71,14 @@ def getMicroModel(param):
     param_micro = {"lamb" : lamb_ , "mu": mu_ , "alpha" : alpha_}
     psi_mu = partial(psi_mu, param = param_micro)
         
-    return MicroModel(mesh_micro, psi_mu, bnd_flags=[0], solver_param = param['solver'])
+    return mm.MicroModel(mesh_micro, psi_mu, bnd_flags=[0], solver_param = param['solver'])
 
     
 param={
 'lx' : 2.0,
 'ly' : 0.5,
-'nx' : 40, 
-'ny' : 10, 
+'nx' : 10, 
+'ny' : 3, 
 'ty' : -0.01,
 'clamped_bc' : 4, 
 'load_bc' : 2,
@@ -101,11 +93,11 @@ param={
 'solver_atol' : 1e-12,
 'solver_rtol' : 1e-12,
 'micro_param': {
-    'msh_file' : "./meshes/mesh_micro.geo",
+    'msh_file' : "../meshes/mesh_micro.geo",
     'msh_out_file' : "./meshes/mesh_micro.xdmf",
     'lamb_ref' : 10.0,
     'mu_ref' : 5.0,
-    'contrast' : 1.0,
+    'contrast' : 1.0, # change contrast to have true heterogeneous microstructue
     'bnd' : 'lin',
     'vf' : 0.124858,
     'psi_mu' : ft.psi_hookean_nonlinear_lame,
@@ -120,6 +112,8 @@ param['dirichlet'].append((param['clamped_bc'], 0, 0.))
 param['dirichlet'].append((param['clamped_bc'], 1, 0.))
 param['neumann'].append((param['load_bc'], 1, param['ty']))
 
+n_strain = 3
+n_tan = 6
 
 # macro-scale problem
 gdim = param['gdim']
@@ -130,22 +124,16 @@ if(param['create_mesh']):
 msh =  ft.Mesh(param['msh_file'], MPI.COMM_WORLD, gdim = gdim)
 
 Uh = fem.functionspace(msh, ("CG", param['deg_u'], (param['gdim'],)))
-
-n_strain = 3
-n_tan = 6
-W = ft.CustomQuadratureSpace(msh, n_strain, degree_quad = 0)
-W0 = ft.CustomQuadratureSpace(msh, 1, degree_quad = 0)
-Wtan = ft.CustomQuadratureSpace(msh, n_tan, degree_quad = 0)
-
-ng = W.scalar_space.dofmap.index_map.size_global
-# only valid because it's the same RVE
-microModels = ng*[getMicroModel(param['micro_param'])] 
-hom = MicroMacro(W, Wtan, W.dxm, microModels)
-
-
 u = fem.Function(Uh)
 v = ufl.TestFunction(Uh)
 u_ = ufl.TrialFunction(Uh)
+
+W = ft.CustomQuadratureSpace(msh, n_strain, degree_quad = 0)
+Wtan = ft.CustomQuadratureSpace(msh, n_tan, degree_quad = 0)
+
+ng = W.scalar_space.dofmap.index_map.size_global # only valid because it's one RVE per element
+microModels = ng*[getMicroModel(param['micro_param'])] 
+hom = mm.MicroMacro(W, Wtan, W.dxm, microModels)
 
 bcs_D = []
 for bc in param['dirichlet']:

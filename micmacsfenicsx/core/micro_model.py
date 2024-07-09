@@ -106,6 +106,18 @@ class MicroModel:
     
     def get_stress_tangent(self):
         return self.homogenise_stress(), self.homogenise_tangent()
+    
+    def get_stress_tangent_solve(self, e):
+        self.solve_microproblem(e)
+        return np.concatenate((self.homogenise_stress(), self.homogenise_tangent()))
+    
+    def get_stress(self, e = None, t=None):
+        if(e is not None):
+            self.solve_microproblem(e)
+        if(t is not None):
+            t = self.homogenise_tangent()
+        
+        return self.homogenise_stress()
 
     def homogenise_tangent(self):
         self.flag_nonlinres.value = 0.0
