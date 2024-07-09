@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Jul  7 00:38:37 2024
+Created on Jul  6 20:23:09 2024
 
-@author: felipe
+@author: felipe rocha
 
-
-This file is part of fetricks:  useful tricks and some extensions for FEniCs and other FEM-related utilities
-Obs: (fe + tricks: where "fe" stands for FEM, FEniCs and me :) ).
+This file is part of micmacsfenics, a FEniCs-based implementation of 
+two-level finite element simulations (FE2) using computational homogenization.
 
 Copyright (c) 2022-2023, Felipe Rocha.
-See file LICENSE.txt for license information.
-Please report all bugs and problems to <felipe.figueredo-rocha@ec-nantes.fr>, or
-<f.rocha.felipe@gmail.com>
+See file LICENSE.txt for license information. 
+Please cite this work according to README.md.
+Please report all bugs and problems to <felipe.figueredo-rocha@u-pec.fr>, or <felipe.f.rocha@gmail.com>
 """
 
+import numpy as np
 import numpy as np
 import ufl
 
