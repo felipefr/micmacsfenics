@@ -2,21 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jul  8 22:00:01 2024
-
-@author: felipe
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Jun 13 16:56:55 2024
-
-@author: felipe
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
 @author: felipe rocha
 
 This file is part of micmacsfenics, a FEniCs-based implementation of 
@@ -25,42 +10,31 @@ two-level finite element simulations (FE2) using computational homogenization.
 Copyright (c) 2021-2024, Felipe Rocha.
 See file LICENSE.txt for license information. 
 Please cite this work according to README.md.
-Please report all bugs and problems to <felipe.figueredo-rocha@ec-nantes.fr>, or <felipe.f.rocha@gmail.com>
+Please report all bugs and problems to <felipe.figueredo-rocha@u-pec.fr>, or <felipe.f.rocha@gmail.com>
 """
 
 """
-Available in: https://github.com/felipefr/micmacsFenics.git
-@author: Felipe Figueredo Rocha, felipe.figueredo-rocha@u-pec.fr, f.rocha.felipe@gmail.com,
-
-
 Bar problem given a constitutive law (single-scale):
 Problem in [0,Lx]x[0,Ly], homogeneous dirichlet on left and traction on the
 right. We use an isotropic linear material, given two lamé parameters.
 """
 
 
-import os, sys
-import matplotlib.pyplot as plt
+import sys
 from timeit import default_timer as timer
 from functools import partial 
 
 sys.path.append("/home/felipe/sources/fetricksx")
 sys.path.append("/home/felipe/sources/micmacsfenicsx/core")
 
-import basix
 import numpy as np
 from dolfinx import fem, io
-import dolfinx.fem.petsc
-import dolfinx.nls.petsc
 import ufl
 from mpi4py import MPI
 
 import fetricksx as ft
 from micro_model import MicroModel
-from micromacro import MicroMacro
-
-
-from dolfinx_external_operator import FEMExternalOperator, replace_external_operators, evaluate_operands, evaluate_external_operators
+from micromacro import MicroMacroExternalOperator
 
 def getMicroModel(param):
         
@@ -96,8 +70,8 @@ def getMicroModel(param):
 param={
 'lx' : 2.0,
 'ly' : 0.5,
-'nx' : 10, 
-'ny' : 3, 
+'nx' : 40, 
+'ny' : 10, 
 'ty' : -0.01,
 'clamped_bc' : 4, 
 'load_bc' : 2,
@@ -148,13 +122,13 @@ W = ft.CustomQuadratureSpace(msh, n_strain, degree_quad = 0)
 W0 = ft.CustomQuadratureSpace(msh, 1, degree_quad = 0)
 Wtan = ft.CustomQuadratureSpace(msh, n_tan, degree_quad = 0)
 
+u = fem.Function(Uh)
+
 ng = W.scalar_space.dofmap.index_map.size_global
 # only valid because it's the same RVE
 microModels = ng*[getMicroModel(param['micro_param'])] 
-hom = MicroMacro(W, Wtan, W.dxm, microModels)
+hom = MicroMacroExternalOperator(ft.symgrad_mandel(u), W, Wtan, microModels)
 
-
-u = fem.Function(Uh)
 v = ufl.TestFunction(Uh)
 u_ = ufl.TrialFunction(Uh)
 
@@ -166,77 +140,21 @@ def F_ext(v):
     return sum([ ufl.inner(bc[2], v[bc[1]])*msh.ds(bc[0]) for bc in param['neumann']])
 
 dx = W.dxm
-stress, tangent = hom.stress, hom.tangent_op
-hom.set_track_strain(ft.symgrad_mandel(u))
 
+res_ext = ufl.inner(hom.stress, ft.symgrad_mandel(v))*dx - F_ext(v)
+J_ext = ufl.inner(hom.tangent_op(ft.symgrad_mandel(u_)), ft.symgrad_mandel(v))*dx
 
-sigma = FEMExternalOperator(ft.symgrad_mandel(u), function_space=W.space)
-def sigma_impl(strain):
-    for s, t, e, m in zip(hom.stress_array, hom.tangent_array, strain, hom.micromodels):
-        m.solve_microproblem(e) 
-        s[:], _ = m.get_stress_tangent()  
-            
-    output = hom.stress_array
-    return output.reshape(-1)
+res_ext, J_ext = hom.register_forms(res_ext, J_ext)
 
-def tang_impl(strain):
-    for s, t, e, m in zip(hom.stress_array, hom.tangent_array, strain, hom.micromodels):
-        m.solve_microproblem(e) 
-        _, t[:]= m.get_stress_tangent()  
-            
-    output = hom.tangent_array
-    return output.reshape(-1)
-
-
-def impl_external(derivatives):
-    if derivatives == (0,):  # no derivation, the function itself
-        return sigma_impl
-    elif derivatives == (1,):  # the derivative with respect to the operand `T`
-        return tang_impl
-    else:
-        return NotImplementedError
-
-sigma.external_function = impl_external
-
-res_ext = ufl.inner(sigma, ft.symgrad_mandel(v))*dx - F_ext(v)
-J_ext = ufl.derivative(res_ext, u, u_)
-
-res_replaced, F_external_operators = replace_external_operators(res_ext)
-J_replaced, J_external_operators = replace_external_operators(J_ext)
-
-evaluated_operands = evaluate_operands(F_external_operators)
-_ = evaluate_external_operators(F_external_operators, evaluated_operands)
-_ = evaluate_external_operators(J_external_operators, evaluated_operands)
-
-
-F_compiled = fem.form(res_replaced)
-J_compiled = fem.form(J_replaced)
-b_vector = fem.assemble_vector(F_compiled)
-# A_matrix = fem.assemble_matrix(J_compiled)
-
-
-
-
-
-res = ufl.inner(stress, ft.symgrad_mandel(v))*dx - F_ext(v)
-jac = ufl.inner(tangent(ft.symgrad_mandel(u_)), ft.symgrad_mandel(v))*dx
-
-
-problem = ft.CustomNonlinearProblem(res_replaced, u, bcs_D, jac)
-solver = ft.CustomNonlinearSolver(problem, callbacks = [hom.update])
-solver.solve(report = True)
-
-# other manner 
 start = timer()
-problem = ft.CustomNonlinearProblem(res, u, bcs_D, jac)
-solver = ft.CustomNonlinearSolver(problem, callbacks = [hom.update])
+problem = ft.CustomNonlinearProblem(res_ext, u, bcs_D, J_ext)
+solver = ft.CustomNonlinearSolver(problem, callbacks=[hom.update])
 solver.solve(report = True)
 end = timer()
 print("time: ", end - start)
 
-# posprocessing
+# # posprocessing
 mesh = u.function_space.mesh
-
 
 with io.XDMFFile(MPI.COMM_WORLD, param['out_file'], "w") as xdmf:
     xdmf.write_mesh(mesh)

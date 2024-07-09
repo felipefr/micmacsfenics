@@ -34,6 +34,9 @@ import dolfinx.nls.petsc
 import ufl
 from mpi4py import MPI
 
+from dolfinx_external_operator import FEMExternalOperator, replace_external_operators, evaluate_operands, evaluate_external_operators
+
+
 import fetricksx as ft
     
 class MicroMacro:
@@ -75,3 +78,41 @@ class MicroMacro:
         for s, t, e, m in zip(self.stress_array, self.tangent_array, self.strain_array, self.micromodels):
             m.solve_microproblem(e) 
             s[:], t[:] = m.get_stress_tangent()  
+
+
+class MicroMacroExternalOperator:
+    
+    def __init__(self, operand, W, Wtan, micromodels=None):        
+        self.stress = FEMExternalOperator(operand, function_space=W.space, 
+                      external_function = lambda d: self.stress_impl if d == (0,) else NotImplementedError)
+        
+        self.tangent = FEMExternalOperator(operand, function_space=Wtan.space,
+                       external_function = lambda d: self.tangent_impl if d == (0,) else NotImplementedError)
+
+        self.tangent_array = np.zeros((Wtan.nq_mesh, Wtan.space.num_sub_spaces))
+        self.stress_array = np.zeros((W.nq_mesh, W.space.num_sub_spaces))
+        
+        self.micromodels = micromodels
+        
+    def stress_impl(self, strain):
+        for s, t, e, m in zip(self.stress_array, self.tangent_array, strain, self.micromodels):
+            m.solve_microproblem(e) 
+            s[:], t[:] = m.get_stress_tangent()  
+                 
+        return self.stress_array.reshape(-1)
+
+    def tangent_impl(self, strain):
+        return self.tangent_array.reshape(-1)
+
+    def tangent_op(self, de):
+        return ufl.dot(ft.as_sym_tensor_3x3(self.tangent), de) 
+    
+    def register_forms(self, res_ext, J_ext):        
+        res_replaced, self.F_external_operators = replace_external_operators(res_ext)
+        J_replaced, self.J_external_operators = replace_external_operators(J_ext)
+        return res_replaced, J_replaced,
+    
+    def update(self, dummy1, dummy2):
+        evaluated_operands = evaluate_operands(self.F_external_operators)
+        _ = evaluate_external_operators(self.F_external_operators, evaluated_operands)
+        _ = evaluate_external_operators(self.J_external_operators, evaluated_operands)
