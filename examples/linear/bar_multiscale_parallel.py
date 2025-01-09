@@ -32,9 +32,9 @@ import sys
 import dolfin as df
 import numpy as np
 from mpi4py import MPI
+import micmacsfenics as mm
+import fetricks as ft
 sys.path.insert(0, '../core/')
-import micro_constitutive_model as mscm
-from fenicsUtils import symgrad_voigt
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -79,22 +79,33 @@ def getFactorBalls(seed=1):
     return fac
 
 
+
+
+if(len(sys.argv)>4):
+    Lx = float(sys.argv[1])
+    Ly = float(sys.argv[2])
+    Nx = int(sys.argv[3])
+    Ny = int(sys.argv[4])
+    NxMicro = NyMicro = int(sys.argv[5]) #per, lin, 'MR', 'lag' or 'dnn' (not tested)
+    bndModel = sys.argv[6]
+
+else:    
+    Lx = 2.0
+    Ly = 0.5
+    Nx = 40
+    Ny = 10
+    NxMicro = NyMicro = 10
+    bndModel = 'per'    
+
 r0 = 0.3
 r1 = 0.5
-Lx = 2.0
-Ly = 0.5
-Nx = int(sys.argv[1])
-Ny = int(sys.argv[2])
-
 lamb_matrix = 1.0
 mu_matrix = 0.5
-NxMicro = NyMicro = int(sys.argv[3])
+
 LxMicro = LyMicro = 1.0
 contrast = 10.0
 
 ty = -0.01
-
-bndModel = sys.argv[4]
 
 # Create mesh and define function space
 mesh = df.RectangleMesh(comm, df.Point(0.0, 0.0), df.Point(Lx, Ly),
@@ -117,7 +128,7 @@ meshMicro = df.RectangleMesh(self_comm, df.Point(0.0, 0.0),
 # random structure ruled by the global cell index
 facs = [getFactorBalls(c.global_index()) for c in df.cells(mesh)]
 params = [[fac_i*lamb_matrix, fac_i*mu_matrix] for fac_i in facs]
-microModels = [mscm.MicroConstitutiveModel(meshMicro, pi, bndModel)
+microModels = [mm.MicroConstitutiveModel(meshMicro, pi, bndModel)
                for pi in params]
 
 Chom = myChom(microModels, degree=0)
@@ -131,7 +142,7 @@ traction = df.Constant((0.0, ty))
 # Define variational problem
 uh = df.TrialFunction(Uh)
 vh = df.TestFunction(Uh)
-a = df.inner(df.dot(Chom, symgrad_voigt(uh)), symgrad_voigt(vh))*df.dx
+a = df.inner(df.dot(Chom, ft.symgrad_voigt(uh)), ft.symgrad_voigt(vh))*df.dx
 b = df.inner(traction, vh)*ds(2)
 
 # Compute solution

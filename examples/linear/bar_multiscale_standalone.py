@@ -72,12 +72,23 @@ def getFactorBalls(seed=1):
     return fac
 
 
-Lx = float(sys.argv[1])
-Ly = float(sys.argv[2])
-Nx = int(sys.argv[3])
-Ny = int(sys.argv[4])
-NxMicro = NyMicro = int(sys.argv[5])
-bndModel = sys.argv[6]
+if(len(sys.argv)>4):
+    Lx = float(sys.argv[1])
+    Ly = float(sys.argv[2])
+    Nx = int(sys.argv[3])
+    Ny = int(sys.argv[4])
+    NxMicro = NyMicro = int(sys.argv[5]) #per, lin, 'MR', 'lag' or 'dnn' (not tested)
+    bndModel = sys.argv[6]
+
+else:    
+    Lx = 2.0
+    Ly = 0.5
+    Nx = 40
+    Ny = 10
+    NxMicro = NyMicro = 10
+    bndModel = 'per'    
+
+print(Lx, Ly, Nx, Ny, NxMicro, bndModel)
 
 r0 = 0.3
 r1 = 0.5
