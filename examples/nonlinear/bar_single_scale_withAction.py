@@ -30,7 +30,7 @@ import dolfin as df
 import numpy as np
 from ufl import nabla_div
 sys.path.insert(0, '../../core/')
-from micmacsfenics.core.fenicsUtils import symgrad
+from fetricks import symgrad
 from functools import partial 
 from timeit import default_timer as timer
 
@@ -59,12 +59,12 @@ if(len(sys.argv)>2):
     Ny = int(sys.argv[2])
 else:
     Nx = 10
-    Ny = 3
+    Ny = 10
     
 facAvg = 1.0  # roughly chosen to approx single scale to mulsticale results
 lamb = facAvg*1.0
 mu = facAvg*0.5
-alpha = 200.0
+alpha = 10.0
 ty = -0.01
 
 # Create mesh and define function space
@@ -117,12 +117,3 @@ uh_.rename("uh", ".")
 with df.XDMFFile("bar_single_scale.xdmf") as f:
     f.write(uh_, 0.0)
 
-
-end = timer()
-print(end - start)
-
-y = df.interpolate(df.SpatialCoordinate(mesh), Uh)
-
-J_action = df.action(J, symgrad(y))
-
-b = df.assemble(J_action)

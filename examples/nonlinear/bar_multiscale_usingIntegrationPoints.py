@@ -6,14 +6,47 @@ Created on Tue Apr 19 14:24:12 2022
 @author: felipe
 """
 
+""" 
+Couldn't map 'v_0' to a float, returning ufl object without evaluation.
+TypeError: Indexed.__float__ returned non-float (type NotImplementedType)
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+
+  File ~/miniforge3/envs/fenics_2019/lib/python3.8/site-packages/dolfin/function/function.py:325 in __call__
+    x = np.fromiter(x, 'd')
+
+ValueError: setting an array element with a sequence.
+
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+
+  File ~/miniforge3/envs/fenics_2019/lib/python3.8/site-packages/spyder_kernels/py3compat.py:356 in compat_exec
+    exec(code, globals, locals)
+
+  File ~/sources/micmacsfenics_legacy/examples/nonlinear/bar_multiscale_usingIntegrationPoints.py:165
+    a_Newton = df.inner(tensor2mandel(symgrad(u_)), hom.tangent(tensor2mandel(symgrad(v))) )*dxm
+
+  File ~/miniforge3/envs/fenics_2019/lib/python3.8/site-packages/dolfin/function/function.py:327 in __call__
+    raise TypeError("expected scalar arguments for the coordinates")
+
+TypeError: expected scalar arguments for the coordinates
+"""
+
 import sys
 sys.path.append("/home/felipe/sources/fetricks")
 sys.path.append("/home/felipe/sources/micmacsfenics")
 import numpy as np
 import dolfin as df
 from fetricks import symgrad, tensor2mandel
+import fetricks as ft
 import micmacsfenics as mm
 from timeit import default_timer as timer
+from functools import partial
 
 df.parameters["form_compiler"]["representation"] = 'uflacs'
 df.parameters["form_compiler"]["optimize"] = True
@@ -24,6 +57,14 @@ import warnings
 from ffc.quadrature.deprecation import QuadratureRepresentationDeprecationWarning
 warnings.simplefilter("once", QuadratureRepresentationDeprecationWarning)
 
+
+def get_Psi_mu(mesh_micro, param):
+        
+    psi_mu_model = ft.psi_hookean_nonlinear_lame
+    param_micro = {"lamb" : param[0] , "mu": param[1] , "alpha" : param[2]}
+    psi_mu = partial(psi_mu_model, param = param_micro)
+        
+    return psi_mu 
 
 def getFactorBalls(seed=1):
     Nballs = 4
@@ -129,9 +170,11 @@ meshMicro = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(LxMicro, LyMicro),
 facs = [getFactorBalls(0) for i in range(nCells)]
 np.random.seed(0)
 params = [[fac_i*lamb_matrix, fac_i*mu_matrix, alpha] for fac_i in facs]
-microModels = [mm.MicroConstitutiveModelNonlinear(meshMicro, pi, bndModel)
-               for pi in params]
-
+# microModels = [mm.MicroConstitutiveModelNonlinear(meshMicro, pi, bndModel)
+#                for pi in params]
+psi_mu_list = [get_Psi_mu(meshMicro, pi) for pi in params]
+microModels = [mm.MicroConstitutiveModelGeneric(meshMicro, psi, bndModel)
+               for psi in psi_mu_list]
 
 # ===================================================================================
 

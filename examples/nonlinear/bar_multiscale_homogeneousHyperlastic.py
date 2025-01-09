@@ -6,6 +6,12 @@ Created on Tue Apr 19 14:24:12 2022
 @author: felipe
 """
 
+
+""" 
+Known bug: the error increases in the first iterations, then decreases. 
+Maybe it's just the error measure (check with other implmentations like bar_single_scale_withAction.py"
+"""
+
 import sys
 sys.path.append("/home/felipe/sources/fetricks")
 sys.path.append("/home/felipe/sources/micmacsfenics")
@@ -15,6 +21,7 @@ from fetricks import symgrad, tensor2mandel
 import fetricks as ft
 import micmacsfenics as mm
 from timeit import default_timer as timer
+from functools import partial
 
 df.parameters["form_compiler"]["representation"] = 'uflacs'
 df.parameters["form_compiler"]["optimize"] = True
@@ -25,6 +32,13 @@ import warnings
 from ffc.quadrature.deprecation import QuadratureRepresentationDeprecationWarning
 warnings.simplefilter("once", QuadratureRepresentationDeprecationWarning)
 
+def get_Psi_mu(mesh_micro, param):
+        
+    psi_mu_model = ft.psi_hookean_nonlinear_lame
+    param_micro = {"lamb" : param[0] , "mu": param[1] , "alpha" : param[2]}
+    psi_mu = partial(psi_mu_model, param = param_micro)
+        
+    return psi_mu 
 
 def getFactorBalls(seed=1):
     Nballs = 4
@@ -126,9 +140,11 @@ meshMicro = df.RectangleMesh(df.Point(0.0, 0.0), df.Point(LxMicro, LyMicro),
 facs = [getFactorBalls(0) for i in range(nCells)]
 np.random.seed(0)
 params = [[fac_i*lamb_matrix, fac_i*mu_matrix, alpha] for fac_i in facs]
-microModels = [mm.MicroConstitutiveModelNonlinear(meshMicro, pi, bndModel)
-               for pi in params]
-
+# microModels = [mm.MicroConstitutiveModelNonlinear(meshMicro, pi, bndModel)
+#                for pi in params]
+psi_mu_list = [get_Psi_mu(meshMicro, pi) for pi in params]
+microModels = [mm.MicroConstitutiveModelGeneric(meshMicro, psi, bndModel)
+               for psi in psi_mu_list]
 
 # ===================================================================================
 # hom = mm.MultiscaleModelExpression(microModels, mesh, [])  

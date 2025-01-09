@@ -6,6 +6,11 @@ Created on Tue Apr 19 14:24:12 2022
 @author: felipe
 """
 
+""" 
+Known bug: the error increases in the first iterations, then decreases. 
+Maybe it's just the error measure (check with other implmentations like bar_single_scale_withAction.py"
+"""
+
 import sys
 import dolfin as df
 from functools import partial
@@ -15,8 +20,8 @@ import numpy as np
 sys.path.insert(0, '../../core/')
 sys.path.insert(0, '../../materials/')
 
-from micmacsfenics.core.fenicsUtils import symgrad, tensor2mandel
-from hyperlastic_model_expression import hyperlasticityModelExpression
+from fetricks import symgrad, tensor2mandel
+from fetricks import hyperelasticModelExpression
 from timeit import default_timer as timer
 
 df.parameters["form_compiler"]["representation"] = 'uflacs'
@@ -35,8 +40,8 @@ if(len(sys.argv)>2):
     Nx = int(sys.argv[1])
     Ny = int(sys.argv[2])
 else:
-    Nx = 3
-    Ny = 2
+    Nx = 10
+    Ny = 10
     
 facAvg = 1.0  # roughly chosen to approx single scale to mulsticale results
 lamb = facAvg*1.0
@@ -79,14 +84,14 @@ bc = [bcL]
 def F_ext(v):
     return df.inner(traction, v)*ds(LoadBndFlag)
 
-hom = hyperlasticityModelExpression(W, dxm, {'lamb' : lamb, 'mu': mu, 'alpha': alpha})
+hom = hyperelasticModelExpression(mesh, {'lamb' : lamb, 'mu': mu, 'alpha': alpha})
 
 u = df.Function(Uh, name="Total displacement")
 du = df.Function(Uh, name="Iteration correction")
 v = df.TestFunction(Uh)
 u_ = df.TrialFunction(Uh)
 
-a_Newton = df.inner(tensor2mandel(symgrad(u_)), df.dot(hom.tangent, tensor2mandel(symgrad(v))) )*dxm
+a_Newton = df.inner(tensor2mandel(symgrad(u_)), hom.tangent_op(tensor2mandel(symgrad(v))) )*dxm
 res = -df.inner(tensor2mandel(symgrad(v)), hom.stress )*dxm + F_ext(v)
 
 Nitermax, tol = 10, 1e-7  # parameters of the Newton-Raphson procedure
@@ -104,7 +109,7 @@ niter = 0
 while nRes/nRes0 > tol and niter < Nitermax:
     df.solve(A, du.vector(), Res, "superlu")
     u.assign(u + du)
-    hom.updateStrain(tensor2mandel(symgrad(u)))
+    hom.update(tensor2mandel(symgrad(u)))
     A, Res = df.assemble_system(a_Newton, res, bc)
     nRes = Res.norm("l2")
     print(" Residual:", nRes)
