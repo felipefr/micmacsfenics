@@ -36,10 +36,11 @@ import matplotlib.pyplot as plt
 from timeit import default_timer as timer
 from functools import partial 
 
-sys.path.append("/home/felipe/sources/fetricksx")
+# sys.path.append("/home/felipe/sources/fetricksx")
+sys.path.append("/home/frocha/sources/fetricksx")
 
 import numpy as np
-from dolfinx import fem, io
+from dolfinx import fem, io, mesh
 import dolfinx.fem.petsc
 import dolfinx.nls.petsc
 import ufl
@@ -89,7 +90,7 @@ param['neumann'].append((param['load_bc'], 1, param['ty']))
 # single-scale problem
 gdim = param['gdim']
 if(param['create_mesh']):
-    ft.generate_rectangle_msh(param['msh_file'], 0.0, 0.0, param['lx'], param['ly'],
+    ft.generate_rectangle_mesh(param['msh_file'], 0.0, 0.0, param['lx'], param['ly'],
                               param['nx'], param['ny'], 'AlternateRight')
     
 msh =  ft.Mesh(param['msh_file'], MPI.COMM_WORLD, gdim = gdim)

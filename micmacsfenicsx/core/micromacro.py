@@ -28,8 +28,8 @@ class MicroMacro:
         self.W = W
         self.Wtan = Wtan
         self.dxm = dxm 
-        self.size_tan = self.Wtan.space.num_sub_spaces
-        self.size_strain = self.W.space.num_sub_spaces
+        self.size_tan = self.Wtan.space.value_shape[0]
+        self.size_strain = self.W.space.value_shape[0]
         self.stress = fem.Function(self.W.space)
         self.strain = fem.Function(self.W.space)
         self.tangent = fem.Function(self.Wtan.space)

@@ -29,8 +29,11 @@ import matplotlib.pyplot as plt
 from timeit import default_timer as timer
 from functools import partial 
 
-sys.path.append("/home/felipe/sources/fetricksx")
-sys.path.append("/home/felipe/sources/micmacsfenicsx/")
+# sys.path.append("/home/felipe/sources/fetricksx")
+# sys.path.append("/home/felipe/sources/micmacsfenicsx/")
+
+sys.path.append("/home/frocha/sources/fetricksx")
+sys.path.append("/home/frocha/sources/micmacsfenicsx/")
 
 import basix
 import numpy as np
@@ -68,6 +71,7 @@ def getMicroModel(param):
                                                {0: lamb_i, 1: lamb_m})
     mu_ = ft.create_piecewise_constant_field(mesh_micro, mesh_micro.markers, 
                                                {0: mu_i, 1: mu_m})
+    
     param_micro = {"lamb" : lamb_ , "mu": mu_ , "alpha" : alpha_}
     psi_mu = partial(psi_mu, param = param_micro)
         
@@ -118,7 +122,7 @@ n_tan = 6
 # macro-scale problem
 gdim = param['gdim']
 if(param['create_mesh']):
-    ft.generate_rectangle_msh(param['msh_file'], 0.0, 0.0, param['lx'], param['ly'],
+    ft.generate_rectangle_mesh(param['msh_file'], 0.0, 0.0, param['lx'], param['ly'],
                               param['nx'], param['ny'])
     
 msh =  ft.Mesh(param['msh_file'], MPI.COMM_WORLD, gdim = gdim)
