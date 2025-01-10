@@ -15,7 +15,7 @@ Please report all bugs and problems to <felipe.figueredo-rocha@ec-nantes.fr>, or
 import sys
 import multiphenics as mp
 import dolfin as df
-from micmacsfenics.core.fenicsUtils import symgrad
+from fetricks import symgrad
 
 class MultiscaleFormulation:
 

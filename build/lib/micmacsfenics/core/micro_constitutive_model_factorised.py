@@ -27,7 +27,7 @@ solver_parameters = {"nonlinear_solver": "newton",
                                        "report": False,
                                        "error_on_nonconvergence": True}}
 
-class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
+class MicroConstitutiveModelFactorised: # TODO derive it again from a base class
 
     # Counter of calls 
     countComputeFluctuations = 0
@@ -35,14 +35,14 @@ class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
     countTangentCalls = 0
     countStressCalls = 0
    
-    def __init__(self, mesh, psi_mu, bnd_model = None):
+    def __init__(self, param):
 
-        self.mesh = mesh
-        self.ndim = 2
-        self.nvoigt = int(self.ndim*(self.ndim + 1)/2)
+        self.mesh = param["mesh"]
+        self.gdim = param["gdim"]
+        self.nvoigt = int(self.gdim*(self.gdim + 1)/2)
         self.tensor_encoding = "mandel"        
         
-        self.psi_mu = psi_mu
+        self.psi_mu = param["psi_mu"]
         
         self.onBoundary = df.CompiledSubDomain('on_boundary')
         self.Uh = df.VectorFunctionSpace(self.mesh, "CG", 1)     
@@ -188,7 +188,6 @@ class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
         self.stresshom = ft.Integral(self.sigmu, self.dy, (self.nvoigt,))/self.vol
         
     def __computeFluctuations(self, e):
-        self.restart_initial_guess()
         self.Eps.assign(df.Constant(e))
         self.microsolver.solve()
         self.setFluctuationUpdateFlag(True)

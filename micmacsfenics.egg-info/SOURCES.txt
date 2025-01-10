@@ -8,10 +8,13 @@ micmacsfenics.egg-info/dependency_links.txt
 micmacsfenics.egg-info/top_level.txt
 micmacsfenics/core/__init__.py
 micmacsfenics/core/micro_constitutive_model.py
+micmacsfenics/core/micro_constitutive_model_abstract.py
 micmacsfenics/core/micro_constitutive_model_eps.py
+micmacsfenics/core/micro_constitutive_model_factorised.py
 micmacsfenics/core/micro_constitutive_model_fake.py
 micmacsfenics/core/micro_constitutive_model_generic.py
 micmacsfenics/core/micro_constitutive_model_minimisation.py
+micmacsfenics/core/micro_constitutive_model_monoscale.py
 micmacsfenics/core/micro_constitutive_model_nonlinear.py
 micmacsfenics/core/micro_constitutive_model_nonlinear_opt.py
 micmacsfenics/extensions/MicroConstitutiveModelDNN.py
@@ -33,3 +36,6 @@ micmacsfenics/materials/multiscale_material_model.py
 micmacsfenics/materials/multiscale_material_model_beforeopt.py
 micmacsfenics/materials/multiscale_material_model_versionUPEC.py
 micmacsfenics/materials/multiscale_model_expression.py
+micmacsfenics/multiscale_model_fetricks/__init__.py
+micmacsfenics/multiscale_model_fetricks/multiscale_model.py
+micmacsfenics/multiscale_model_fetricks/multiscale_model_expression.py
