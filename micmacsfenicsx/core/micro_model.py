@@ -3,31 +3,37 @@
 """
 Created on Sat Jul  6 23:30:58 2024
 
-@author: felipe
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Feb  6 20:23:09 2023
-
 @author: felipe rocha
 
 This file is part of micmacsfenics, a FEniCs-based implementation of 
 two-level finite element simulations (FE2) using computational homogenization.
 
-Copyright (c) 2022-2023, Felipe Rocha.
+Copyright (c) 2022-2025, Felipe Rocha.
 See file LICENSE.txt for license information. 
 Please cite this work according to README.md.
-Please report all bugs and problems to <felipe.figueredo-rocha@ec-nantes.fr>, or <felipe.f.rocha@gmail.com>
+Please report all bugs and problems to <felipe.figueredo-rocha@u-pec.fr>, or <felipe.f.rocha@gmail.com>
+"""
+
+"""
+DESCRIPTION: 
+    Computational homogenisation for nonlinear materials (infinitesimal strain).
+    It computes both homogenised stress and tangent tensors.
+    
+CONVENTIONS:
+    Infinitesimal (Linear) strain, but nonlinear constitutive
+    Mandel notation throughout
+    Green-Elastic material (strain energy density potential)
+    Split between affine (given) and non-affine (fluctuations) parts of displacement
+    
+KNOWN LIMITATIONS:
+    Linear boundary (zero boundary fluctuations) implemented
+     
 """
 
 import sys
 import numpy as np
 from timeit import default_timer as timer
 from functools import partial 
-
-sys.path.append("/home/felipe/sources/fetricksx")
 
 import basix
 import numpy as np
@@ -37,15 +43,8 @@ import dolfinx.nls.petsc
 import ufl
 from mpi4py import MPI
 from petsc4py.PETSc import ScalarType  # type: ignore
-
-
 import fetricksx as ft
 
-
-# solver_parameters = {"nonlinear_solver": "newton",
-#                      "newton_solver": {"maximum_iterations": 20,
-#                                        "report": False,
-#                                        "error_on_nonconvergence": True}}
 
 class MicroModel:
 
