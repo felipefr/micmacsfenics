@@ -36,6 +36,12 @@ class MultiscaleModel(ft.materialModel):
             self.micromodels = micromodels
         else:
             self.micromodels = self.ngauss*[None] # just a placeholder 
+            
+        tensor_encoding = self.micromodels[0].tensor_encoding # assuming the same encoding for all RVEs
+        unflatten_dict = {'mandel': ft.as_sym_tensor_3x3,
+                          'unsym': ft.as_sym_tensor_4x4}
+            
+        self.unflatten_foo = unflatten_dict[tensor_encoding]  
         
     
     # afterward micromodel setting
@@ -56,9 +62,12 @@ class MultiscaleModel(ft.materialModel):
         self.strain_array = self.strain.vector().vec().array.reshape( (self.ngauss, self.size_strain) )
         self.stress_array = self.stress.vector().vec().array.reshape( (self.ngauss, self.size_strain))
         self.tangent_array = self.tangent.vector().vec().array.reshape( (self.ngauss, self.size_tan))
-                
+        
+       
+        
     def tangent_op(self, de):
-        return df.dot(ft.as_sym_tensor_3x3(self.tangent), de) 
+        print(self.tangent.ufl_shape)
+        return df.dot(self.unflatten_foo(self.tangent), de) 
 
  # is forced? force to update state even it is already updated
     def update_stress_tangent(self, is_forced = True):

@@ -8,3 +8,6 @@ from .core.micro_constitutive_model_nonlinear import MicroConstitutiveModelNonli
 from .core.micro_constitutive_model_nonlinear_opt import MicroConstitutiveModelNonlinearOpt
 from .multiscale_model_fetricks.multiscale_model import MultiscaleModel
 from .multiscale_model_fetricks.multiscale_model_expression import MultiscaleModelExpression
+
+
+from .core.micro_constitutive_model_finitestrain import MicroConstitutiveModelFiniteStrain

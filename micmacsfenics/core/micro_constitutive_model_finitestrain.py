@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Wed Feb  5 22:46:04 2025
+
+@author: felipe
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Mon Feb  6 20:23:09 2023
 
 @author: felipe rocha
@@ -27,7 +35,7 @@ solver_parameters = {"nonlinear_solver": "newton",
                                        "report": False,
                                        "error_on_nonconvergence": True}}
 
-class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
+class MicroConstitutiveModelFiniteStrain: # TODO derive it again from a base class
 
     # Counter of calls 
     countComputeFluctuations = 0
@@ -38,8 +46,8 @@ class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
     def __init__(self, mesh, psi_mu, bnd_model = None):
         self.mesh = mesh
         self.ndim = 2
-        self.nvoigt = int(self.ndim*(self.ndim + 1)/2)
-        self.tensor_encoding = "mandel"        
+        self.tensor_encoding = "unsym"        
+        self.nstrain = self.ndim*self.ndim
         
         self.psi_mu = psi_mu
         
@@ -56,7 +64,7 @@ class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
 
         self.declareAuxVariables()
         self.setMicroproblem()
-        # self.setCanonicalproblem()
+        self.setCanonicalproblem()
     
     
     # seems it is not working
@@ -83,8 +91,7 @@ class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
 
     
     def getStressTangent(self, e):
-        # return np.concatenate((self.getStress(e), symflatten(self.getTangent(e))))
-        return self.getStress(e), ft.sym_flatten_3x3_np(self.getTangent(e)) # already in the mandel format
+        return self.getStress(e), ft.sym_flatten_4x4_np(self.getTangent(e))
 
     def getStressTangent_force(self, e): # force to recompute
         self.setUpdateFlag(False)
@@ -112,29 +119,30 @@ class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
         self.dy = df.Measure('dx', self.mesh)
         self.vol = df.assemble(df.Constant(1.0)*self.dy)
         self.y = df.SpatialCoordinate(self.mesh)
-        self.Eps = df.Constant((0., 0., 0.))  # just placeholder
-        self.Eps_kl = df.Constant((0., 0., 0.))  # just placeholder
+        self.Gmacro = df.Constant((0., 0., 0., 0.))  # just placeholder
+        self.Gmacro_kl = df.Constant((0., 0., 0., 0.))  # just placeholder
         
         self.duh = df.TrialFunction(self.Uh)            # Incremental displacement
         self.vh  = df.TestFunction(self.Uh)             # Test function
         self.uh  = df.Function(self.Uh)                 # Displacement from previous iteration
         self.ukl = df.Function(self.Uh)
         
-        self.stresshom = np.zeros(self.nvoigt)
-        self.tangenthom = np.zeros((self.nvoigt,self.nvoigt))
+        self.stresshom = np.zeros(self.nstrain)
+        self.tangenthom = np.zeros((self.nstrain,self.nstrain))
         
     def setMicroproblem(self):
         
-        dy, Eps = self.dy, self.Eps
+        dy, Gmacro = self.dy, self.Gmacro
         uh, vh, duh = self.uh, self.vh, self.duh
         
-        eps = Eps  + ft.symgrad_mandel(uh)            # Deformation gradient
-        eps_var = df.variable(eps)
+        Fmu = ft.Id_unsym_df + Gmacro  + ft.grad_unsym(uh)
+        Fmu_var = df.variable(Fmu)
+        F = ft.unsym2tensor(Fmu_var)
         
-        self.sigmu, self.Cmu = ft.get_stress_tang_from_psi(self.psi_mu, eps_var, eps_var) 
+        self.PKmu, self.Amu = ft.get_stress_tang_from_psi(self.psi_mu, F, Fmu_var) 
         
-        self.Res = df.inner(self.sigmu , ft.symgrad_mandel(vh))*dy 
-        self.Jac = df.inner(df.dot( self.Cmu, ft.symgrad_mandel(duh)), ft.symgrad_mandel(vh))*dy
+        self.Res = df.inner(self.PKmu , ft.grad_unsym(vh))*dy 
+        self.Jac = df.inner(df.dot( self.Amu, ft.grad_unsym(duh)), ft.grad_unsym(vh))*dy
         
         self.microproblem = df.NonlinearVariationalProblem(self.Res, uh, self.bcD, self.Jac)
         self.microsolver = df.NonlinearVariationalSolver(self.microproblem)
@@ -145,37 +153,37 @@ class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
         dy, vh = self.dy, self.vh
                  
         # negative because 
-        self.RHS_can = -df.inner(df.dot( self.Cmu, self.Eps_kl), ft.symgrad_mandel(vh))*dy 
+        self.RHS_can = -df.inner(df.dot( self.Amu, self.Gmacro_kl), ft.grad_unsym(vh))*dy 
         
-        self.Acan = df.PETScMatrix()
+        self.Kcan = df.PETScMatrix()
         self.bcan = df.PETScVector()
         self.solver_can = df.PETScLUSolver()
         
     
     def __homogeniseTangent(self):
         
-        # print("index" , epsMacro)
+        # print("index" , GmacroMacro)
     
-        dy, vol, Eps_kl, Cmu, ukl = self.dy, self.vol, self.Eps_kl, self.Cmu, self.ukl
+        dy, vol, Gmacro_kl, Amu, ukl = self.dy, self.vol, self.Gmacro_kl, self.Amu, self.ukl
         
-        df.assemble(self.Jac, tensor = self.Acan)
-        self.bcD.apply(self.Acan)
+        df.assemble(self.Jac, tensor = self.Kcan)
+        self.bcD.apply(self.Kcan)
                         
         self.tangenthom.fill(0.0)
         
-        unit_vec = np.zeros(self.nvoigt)
+        unit_vec = np.zeros(self.nstrain)
         
-        for i in range(self.nvoigt):
+        for i in range(self.nstrain):
             
             unit_vec[i] = 1.0
-            Eps_kl.assign(df.Constant(unit_vec))
+            Gmacro_kl.assign(df.Constant(unit_vec))
             
             df.assemble(self.RHS_can, tensor = self.bcan)
             self.bcD.apply(self.bcan)
     
-            self.solver_can.solve(self.Acan, ukl.vector(), self.bcan)
+            self.solver_can.solve(self.Kcan, ukl.vector(), self.bcan)
         
-            self.tangenthom[i,:] += ft.Integral(df.dot(Cmu, Eps_kl +  ft.symgrad_mandel(ukl)) , dy, ((self.nvoigt,)))/vol
+            self.tangenthom[i,:] += ft.Integral(df.dot(Amu, Gmacro_kl +  ft.grad_unsym(ukl)) , dy, ((self.nstrain,)))/vol
             
             unit_vec[i] = 0.0
         
@@ -184,34 +192,34 @@ class MicroConstitutiveModelGeneric: # TODO derive it again from a base class
         
         
     def __homogeniseStress(self):
-        self.stresshom = ft.Integral(self.sigmu, self.dy, (self.nvoigt,))/self.vol
+        self.stresshom = ft.Integral(self.PKmu, self.dy, (self.nstrain,))/self.vol
         
-    def __computeFluctuations(self, e):
+    def __computeFluctuations(self, Gmacro):
         self.restart_initial_guess()
-        self.Eps.assign(df.Constant(e))
+        self.Gmacro.assign(df.Constant(Gmacro))
         self.microsolver.solve()
         self.setFluctuationUpdateFlag(True)
         
         type(self).countComputeFluctuations = type(self).countComputeFluctuations + 1
 
         
-    def __computeStress(self, e):
+    def __computeStress(self, Gmacro):
         if(not self.isFluctuationUpdated):
-            self.__computeFluctuations(e)
+            self.__computeFluctuations(Gmacro)
     
         self.__homogeniseStress()
         self.setStressUpdateFlag(True)
     
-        return self.__returnStress(e)
+        return self.__returnStress(Gmacro)
         
     
-    def __computeTangent(self, e):
+    def __computeTangent(self, Gmacro):
         
         if(not self.isFluctuationUpdated):
-            self.__computeFluctuations(e)
+            self.__computeFluctuations(Gmacro)
             
         self.__homogeniseTangent()
         self.setTangentUpdateFlag(True)            
         
-        return self.__returnTangent(e)
+        return self.__returnTangent(Gmacro)
         
