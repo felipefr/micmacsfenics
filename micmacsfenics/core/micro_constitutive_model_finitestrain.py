@@ -205,6 +205,9 @@ class MicroConstitutiveModelFiniteStrain: # TODO derive it again from a base cla
         
     def __computeStress(self, Gmacro):
         if(not self.isFluctuationUpdated):
+            if(len(Gmacro) == 3):
+                print("salut")
+                input()
             self.__computeFluctuations(Gmacro)
     
         self.__homogeniseStress()
