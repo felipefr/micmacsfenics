@@ -31,6 +31,7 @@ class MultiscaleModel(ft.materialModel):
         
         self.mesh = W.mesh()
         self.create_internal_variables(W, Wtan, dxm)
+        self.gdim = self.mesh.geometric_dimension()
         
         if(micromodels):
             self.micromodels = micromodels
@@ -38,8 +39,14 @@ class MultiscaleModel(ft.materialModel):
             self.micromodels = self.ngauss*[None] # just a placeholder 
             
         tensor_encoding = self.micromodels[0].tensor_encoding # assuming the same encoding for all RVEs
-        unflatten_dict = {'mandel': ft.as_sym_tensor_3x3,
-                          'unsym': ft.as_sym_tensor_4x4}
+        
+        if(self.gdim == 2):
+            unflatten_dict = {'mandel': ft.as_sym_tensor_3x3,
+                              'unsym': ft.as_sym_tensor_4x4}
+        elif(self.gdim==3):
+            # unflatten_dict = {'mandel': ft.as_sym_tensor_6x6, # needed to implement it
+                              # 'unsym': ft.as_sym_tensor_9x9}
+            unflatten_dict = {'unsym': ft.as_sym_tensor_9x9}
             
         self.unflatten_foo = unflatten_dict[tensor_encoding]  
         

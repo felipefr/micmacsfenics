@@ -48,7 +48,7 @@ class MicroConstitutiveModelFiniteStrain3d: # TODO derive it again from a base c
         self.Uh = df.VectorFunctionSpace(self.mesh, "CG", 1) 
         
         onBoundary = df.CompiledSubDomain('on_boundary')
-        self.bcD = [df.DirichletBC(self.Uh, df.Constant((0,0,0)), onBoundary)]   # 3d
+        self.bcD = df.DirichletBC(self.Uh, df.Constant((0,0,0)), onBoundary)   # 3d
         # self.bcD = [df.DirichletBC(self.Uh, df.Constant((0,0,0)), self.mesh.boundaries, 1)]   # 3d
         
         self.isStressUpdated = False
@@ -60,7 +60,7 @@ class MicroConstitutiveModelFiniteStrain3d: # TODO derive it again from a base c
 
         self.declareAuxVariables()
         self.setMicroproblem()
-        # self.setCanonicalproblem()
+        self.setCanonicalproblem()
     
     
     # seems it is not working
@@ -178,8 +178,8 @@ class MicroConstitutiveModelFiniteStrain3d: # TODO derive it again from a base c
             self.bcD.apply(self.bcan)
     
             self.solver_can.solve(self.Kcan, ukl.vector(), self.bcan)
-        
-            self.tangenthom[i,:] += ft.Integral(df.dot(Amu, Gmacro_kl +  ft.grad_unsym(ukl)) , dy, ((self.nstrain,)))/vol
+            
+            self.tangenthom[i,:] += ft.Integral(df.dot(Amu, Gmacro_kl +  conv.grad_unsym(ukl)) , dy, ((self.nstrain,)))/vol
             
             unit_vec[i] = 0.0
         
@@ -191,7 +191,6 @@ class MicroConstitutiveModelFiniteStrain3d: # TODO derive it again from a base c
         self.stresshom = ft.Integral(self.PKmu, self.dy, (self.nstrain,))/self.vol
         
     def __computeFluctuations(self, Gmacro):
-        print("hello")
         self.restart_initial_guess()
         self.Gmacro.assign(df.Constant(Gmacro))
         self.microsolver.solve()
