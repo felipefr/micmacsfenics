@@ -195,7 +195,7 @@ class MicroConstitutiveModelFiniteStrain: # TODO derive it again from a base cla
         self.stresshom = ft.Integral(self.PKmu, self.dy, (self.nstrain,))/self.vol
         
     def __computeFluctuations(self, Gmacro):
-        self.restart_initial_guess()
+        # self.restart_initial_guess()
         self.Gmacro.assign(df.Constant(Gmacro))
         self.microsolver.solve()
         self.setFluctuationUpdateFlag(True)
