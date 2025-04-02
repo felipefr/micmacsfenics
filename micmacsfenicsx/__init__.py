@@ -1,4 +1,5 @@
 from .core.micro_model import MicroModel
+from .core.micro_model_finite_strain import MicroModelFiniteStrain
 from .core.micromacro import MicroMacro
 
 try:
