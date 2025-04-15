@@ -26,8 +26,8 @@ class FormulationMinimallyConstrained(MultiscaleFormulation):
     def otherRestrictions(self):
         return [None]
 
-    def blocks(self):
-        aa, ff = super(FormulationMinimallyConstrained, self).blocks()
+    def blocks(self, C, Eps):
+        aa, ff = super(FormulationMinimallyConstrained, self).blocks(C, Eps)
 
         n = df.FacetNormal(self.mesh)
         

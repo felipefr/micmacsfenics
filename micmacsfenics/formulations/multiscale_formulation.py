@@ -15,16 +15,14 @@ Please report all bugs and problems to <felipe.figueredo-rocha@ec-nantes.fr>, or
 import sys
 import multiphenics as mp
 import dolfin as df
-from fetricks import symgrad
+import fetricks as ft
 
 class MultiscaleFormulation:
 
-    def __init__(self, mesh, sigma, Eps, others):
+    def __init__(self, mesh, others):
 
         self.mesh = mesh
         self.others = others
-        self.sigma = sigma
-        self.Eps = Eps
 
         V = self.flutuationSpace()
         R = self.zeroAverageSpace()
@@ -37,20 +35,20 @@ class MultiscaleFormulation:
         self.uu_ = mp.block_split(self.uu)
         self.vv_ = mp.block_split(self.vv)
 
-    def __call__(self):
-        return self.blocks() + self.bcs() + [self.W]
+    def __call__(self, C, Eps):
+        return self.blocks(C, Eps) + self.bcs() + [self.W]
 
-    def blocks(self):
+    def blocks(self, C, Eps):
         dx = df.Measure('dx', self.mesh)
 
         u, p = self.uu_[0:2]
         v, q = self.vv_[0:2]
 
-        aa = [[df.inner(self.sigma(u), symgrad(v))*dx, df.inner(p, v)*dx],
+        aa = [[df.inner(df.dot(C, ft.symgrad_mandel(u)), ft.symgrad_mandel(v))*dx, df.inner(p, v)*dx],
               [df.inner(q, u)*dx(), 0]]
 
         # dot(sigma(Eps) , symgrad(v)) = dot(Eps , sigma(symgrad(v))
-        ff = [-df.inner(self.Eps, self.sigma(v))*dx, 0]
+        ff = [-df.inner(df.dot(C,Eps), ft.symgrad_mandel(v))*dx, 0]
 
         return [aa, ff]
 

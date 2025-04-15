@@ -29,8 +29,8 @@ class FormulationMinimallyConstrainedHighOrder(MultiscaleFormulation):
     def otherRestrictions(self):
         return [None, None]
 
-    def blocks(self):
-        aa, ff = super(FormulationMinimallyConstrainedHighOrder, self).blocks()
+    def blocks(self, C, Eps):
+        aa, ff = super(FormulationMinimallyConstrainedHighOrder, self).blocks(C, Eps)
         
         n = df.FacetNormal(self.mesh)
         i,j,k,l = ufl.indices(4)
@@ -51,7 +51,7 @@ class FormulationMinimallyConstrainedHighOrder(MultiscaleFormulation):
              def weak_constraintG(Lamb,w):
                  return df.inner(Lamb, ufl.as_tensor(w[i]*n[j], (i,j)))*self.mesh.ds
              def weak_constraintH(Lamb,w):
-                 aux = ufl.as_tensor(w[i]*n[j]*y[l]*J[l,k], (i,j,k))
+                 aux = ufl.as_tensor(w[i]*n[j]*y[l]*Jinv[l,k], (i,j,k))
                  return df.inner(Lamb, aux)*self.mesh.ds
 
         u, P, PHO = self.uu_[0], self.uu_[2], self.uu_[3]

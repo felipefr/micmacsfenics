@@ -31,6 +31,7 @@ sys.path.append(home + "fetricks")
 sys.path.append(home + "micmacsfenics")
 
 import dolfin as df
+import ufl
 import numpy as np
 import ddfenics as dd
 import fetricks as ft 
@@ -107,10 +108,13 @@ if __name__ == "__main__":
     micromodel.restart_initial_guess()
     micromodel.setUpdateFlag(False)
     #A_ref = micromodel.getTangent(Gmacro)
-    #A_per = get_tangent_pertubation_central_difference(Gmacro, micromodel)
+    A_per = get_tangent_pertubation_central_difference(Gmacro, micromodel)
     A_mp = micromodel.compute_tangent_multiphenics()
-    A_lt = micromodel.compute_tangent_localisation_tensors()
+    A_lt = micromodel.compute_tangent_localisation_tensors_full_notation()
     #print(A_ref)
-    #print(A_per)
+    print(A_per)
     print(A_mp)
     print(A_lt)
+    print(np.linalg.norm(A_mp - A_lt)/np.linalg.norm(A_lt))
+    
+    B_lt = micromodel.compute_hypertangent()
