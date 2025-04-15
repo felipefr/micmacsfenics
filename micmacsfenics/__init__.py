@@ -12,3 +12,4 @@ from .multiscale_model_fetricks.multiscale_model_expression import MultiscaleMod
 
 from .core.micro_constitutive_model_finitestrain import MicroConstitutiveModelFiniteStrain
 from .core.micro_constitutive_model_finitestrain3d import MicroConstitutiveModelFiniteStrain3d
+from .core.micro_constitutive_model_high_order import MicroConstitutiveModelHighOrder

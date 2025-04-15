@@ -30,14 +30,22 @@ class FormulationMinimallyConstrained(MultiscaleFormulation):
         aa, ff = super(FormulationMinimallyConstrained, self).blocks()
 
         n = df.FacetNormal(self.mesh)
-        ds = df.Measure('ds', self.mesh)
+        
+        
+        weak_constraint = lambda Lamb, w: df.inner(Lamb, df.outer(w, n))*self.mesh.ds
+        
+        if 'external_bnd' in self.others:
+            weak_constraint = lambda Lamb, w: sum([df.inner(Lamb, df.outer(w, n))*self.mesh.ds(i) 
+                                                   for i in self.others['external_bnd'] ])
+        else:
+            weak_constraint = lambda Lamb, w: df.inner(Lamb, df.outer(w, n))*self.mesh.ds
 
         u, P = self.uu_[0], self.uu_[2]
         v, Q = self.vv_[0], self.vv_[2]
-
-        aa[0].append(- df.inner(P, df.outer(v, n))*ds)
+        
+        aa[0].append(- weak_constraint(P,v))
         aa[1].append(0)
-        aa.append([- df.inner(Q, df.outer(u, n))*ds, 0, 0])
+        aa.append([- weak_constraint(Q,u), 0, 0])
 
         ff.append(0)
 

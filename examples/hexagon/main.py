@@ -54,47 +54,16 @@ def getMicroModel(mesh_micro_name= "../meshes/mesh_micro.xdmf", gdim=2):
     # mesh_micro_name = 'meshes/mesh_micro.xdmf'
     lamb_ref = 432.099
     mu_ref = 185.185
-    contrast = 10.0
-    bndModel_micro = 'lin'
-    vf = 0.124858 # volume fraction of inclusions vf*c_i + (1-vf)*c_m
+    bndModel_micro = ['MRHO', [1,2]]
     
-    psi_mu = ft.psi_ciarlet_F
-    
-    lamb_micro_m = lamb_ref/( 1-vf + contrast*vf)
-    mu_micro_m = mu_ref/( 1-vf + contrast*vf)
-    lamb_micro_i = contrast*lamb_micro_m
-    mu_micro_i = contrast*mu_micro_m
-    
+    psi_mu = ft.psi_hookean_nonlinear_lame
     mesh_micro = ft.Mesh(mesh_micro_name)
     
-    lamb_ = ft.getMultimaterialExpression(np.array([lamb_micro_i, lamb_micro_m]).reshape((2,1)), mesh_micro, op = 'cpp')
-    mu_ = ft.getMultimaterialExpression(np.array([mu_micro_i, mu_micro_m]).reshape((2,1)), mesh_micro, op = 'cpp')
-    
-    param_micro = {"lamb" : lamb_[0] , "mu": mu_[0]} 
+    param_micro = {"lamb" : df.Constant(lamb_ref) , "mu": df.Constant(mu_ref), "alpha": df.Constant(0.0)} 
     
     psi_mu = partial(psi_mu, param = param_micro)
         
-    if(gdim==3):
-        return mm.MicroConstitutiveModelFiniteStrain3d(mesh_micro, psi_mu, bndModel_micro)
-    elif(gdim==2):
-        return mm.MicroConstitutiveModelFiniteStrain(mesh_micro, psi_mu, bndModel_micro)
-
-
-def get_tangent_pertubation_forward(Gmacro, micromodel, tau = 1e-6):
-    micromodel.setUpdateFlag(False)
-    micromodel.restart_initial_guess()
-    stress_ref = micromodel.getStress(Gmacro)
-    n = len(Gmacro)
-    base_canonic = np.eye(n)
-    Atang = np.zeros((n,n))
-    
-    for j in range(n):
-        micromodel.restart_initial_guess()
-        micromodel.setUpdateFlag(False)
-        stress_per = micromodel.getStress(Gmacro + tau*base_canonic[j,:])
-        Atang[:,j] = (stress_per - stress_ref)/tau 
-    
-    return Atang
+    return mm.MicroConstitutiveModelHighOrder(mesh_micro, psi_mu, bndModel_micro)
 
 def get_tangent_pertubation_central_difference(Gmacro, micromodel, tau = 1e-6):
     n = len(Gmacro)
@@ -113,45 +82,6 @@ def get_tangent_pertubation_central_difference(Gmacro, micromodel, tau = 1e-6):
     
     return Atang
 
-def get_error_tang(Gmacro, micromodel, tau = 1e-6, method = 'DF', A_ref = None):    
-    if(type(A_ref) == type(None)):
-        micromodel.setUpdateFlag(False)
-        micromodel.restart_initial_guess()
-        A_ref = micromodel.getTangent(Gmacro)
-        
-    get_tangent = {'DF': get_tangent_pertubation_forward, 
-                   'CD': get_tangent_pertubation_central_difference}[method]
-    
-    A_pert = get_tangent(Gmacro, micromodel, tau)
-
-    return np.linalg.norm(A_pert-A_ref)/np.linalg.norm(A_ref)
-
-
-def study_tau(micromodel):
-
-    Gmacro = np.array([0.1,0.3,-0.2,0.3])
-    micromodel.restart_initial_guess()
-    micromodel.setUpdateFlag(False)
-    A_ref = micromodel.getTangent(Gmacro)
-    
-    tau_list = [1e-2,1e-3,1e-4,1e-5,1e-6,1e-7,1e-8,1e-9]
-    error = []
-    error_CD = []
-    
-    for tau in tau_list:
-        error.append(get_error_tang(Gmacro, micromodel, tau, 'DF', A_ref))
-        error_CD.append(get_error_tang(Gmacro, micromodel, tau, 'CD', A_ref))
-    
-    
-    plt.plot(tau_list, error,'-o', label = 'pertubation')
-    plt.plot(tau_list, error_CD,'-o',label = 'pertubation CD')
-    plt.legend()
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.xlabel('tau')
-    plt.grid()
-    plt.ylabel('relative error')
-
 if __name__ == "__main__":
     
     
@@ -159,9 +89,11 @@ if __name__ == "__main__":
     clampedFlag = 1 # left
     
     
-    mesh_micro_name_geo = './meshes/mesh_hexagon.geo'.format(gdim)
-    mesh_micro_name = './meshes/mesh_hexagon.xdmf'.format(gdim)
+    # mesh_micro_name_geo = './meshes/mesh_hexagon.geo'.format(gdim)
+    # mesh_micro_name = './meshes/mesh_hexagon.xdmf'.format(gdim)
     
+    mesh_micro_name_geo = './meshes/mesh_square.geo'.format(gdim)
+    mesh_micro_name = './meshes/mesh_square.xdmf'.format(gdim)
     
     gmsh_mesh = ft.GmshIO(mesh_micro_name_geo, gdim)
     gmsh_mesh.write("xdmf")
@@ -169,65 +101,16 @@ if __name__ == "__main__":
     
     micromodel = getMicroModel(mesh_micro_name, gdim)  
     
-    
-    
-    # Gmacro = np.array([0.1,0.3,-0.2,0.3])
-    # micromodel.restart_initial_guess()
-    # micromodel.setUpdateFlag(False)
-    # A_ref = micromodel.getTangent(Gmacro)
-    # print(A_ref)
-    
-    # Gmacro = np.array([0.1,0.3,-0.2,0.3])
-    # micromodel.restart_initial_guess()
-    # micromodel.solve_microproblem(Gmacro)
-    # A_ref = micromodel.homogenise_tangent()
-    # print(A_ref)
-    
-    # A_per = get_tangent_pertubation_central_difference(Gmacro, micromodel)
-    # print(A_per)
-    
-    # study_tau(micromodel)
-    
-    nstrain = gdim**2
-    
-    tau = 1e-7
-
-    time_ref = 0.0
-    time_DF = 0.0 
-    time_CD = 0.0
-    
-    Nsteps = 80
-    dload = 0.005
-    Gmacro = np.zeros((Nsteps,nstrain))
-    Gmacro[0,:] = dload*np.random.randn(len(Gmacro[0,:]))
-    
-    for i in range(Nsteps-1):
-        Gmacro[i+1,:] = Gmacro[i,:] + dload*np.random.randn(len(Gmacro[0,:]))
-
-    start = timer()  
+    nstrain = 3
+    Gmacro = np.array([0.1,0.3,-0.2])
+    micromodel.setCanonicalproblem()
     micromodel.restart_initial_guess()
-    for i in range(Nsteps):
-        micromodel.setUpdateFlag(False)
-        A_ref = micromodel.getTangent(Gmacro[i,:])
-    end = timer()
-    time_ref += (end-start)
-        
-    start = timer()  
-    micromodel.restart_initial_guess()
-    for i in range(Nsteps):
-        micromodel.setUpdateFlag(False)
-        A_DF = get_tangent_pertubation_forward(Gmacro[i,:], micromodel, tau)
-    end = timer()
-    time_DF += (end-start)
-        
-    start = timer()  
-    micromodel.restart_initial_guess()
-    for i in range(Nsteps):
-        micromodel.setUpdateFlag(False)
-        A_CD = get_tangent_pertubation_central_difference(Gmacro[i,:], micromodel, tau)
-    end = timer()
-    time_CD += (end-start)
-
-    print("time ref", time_ref)
-    print("speedup CD:" , time_CD/time_ref)
-    print("speedup DF:" , time_DF/time_ref)
+    micromodel.setUpdateFlag(False)
+    #A_ref = micromodel.getTangent(Gmacro)
+    #A_per = get_tangent_pertubation_central_difference(Gmacro, micromodel)
+    A_mp = micromodel.compute_tangent_multiphenics()
+    A_lt = micromodel.compute_tangent_localisation_tensors()
+    #print(A_ref)
+    #print(A_per)
+    print(A_mp)
+    print(A_lt)
