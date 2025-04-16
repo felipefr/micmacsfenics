@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Wed Apr 16 12:18:21 2025
+
+@author: felipe
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Wed Feb  1 17:25:47 2023
 
 @author: ffiguere
@@ -52,15 +60,19 @@ warnings.simplefilter("once", QuadratureRepresentationDeprecationWarning)
 comm = df.MPI.comm_world
 
 def getMicroModel(mesh_micro_name= "../meshes/mesh_micro.xdmf", gdim=2):
-    # mesh_micro_name = 'meshes/mesh_micro.xdmf'
-    lamb_ref = 432.099
-    mu_ref = 185.185
-    bndModel_micro = ['MRHO', [1,2]]
+    # mesh_micro_name = 'meshes/mesh_micro.xdmf'    
+    E = 20e3
+    nu = 0.3
+    
+    lamb, mu = ft.youngPoisson2lame(E,nu)
+    bndModel_micro = ['lin', [1,2,3]]
     
     psi_mu = ft.psi_hookean_nonlinear_lame
     mesh_micro = ft.Mesh(mesh_micro_name)
     
-    param_micro = {"lamb" : df.Constant(lamb_ref) , "mu": df.Constant(mu_ref), "alpha": df.Constant(0.0)} 
+    param_micro = {"lamb" : df.Constant(lamb) , 
+                   "mu": df.Constant(mu), 
+                   "alpha": df.Constant(0.0)} 
     
     psi_mu = partial(psi_mu, param = param_micro)
         
@@ -84,42 +96,22 @@ def get_tangent_pertubation_central_difference(Gmacro, micromodel, tau = 1e-6):
     return Atang
 
 if __name__ == "__main__":
-    
-    
     gdim = 2
-    clampedFlag = 1 # left
+    mesh_micro_name_geo = './meshes/mesh_hexagon.geo'.format(gdim)
+    mesh_micro_name = './meshes/mesh_hexagon.xdmf'.format(gdim)
     
-    
-    # mesh_micro_name_geo = './meshes/mesh_hexagon.geo'.format(gdim)
-    # mesh_micro_name = './meshes/mesh_hexagon.xdmf'.format(gdim)
-    
-    mesh_micro_name_geo = './meshes/mesh_square.geo'.format(gdim)
-    mesh_micro_name = './meshes/mesh_square.xdmf'.format(gdim)
+    # mesh_micro_name_geo = './meshes/mesh_square.geo'.format(gdim)
+    # mesh_micro_name = './meshes/mesh_square.xdmf'.format(gdim)
     
     gmsh_mesh = ft.GmshIO(mesh_micro_name_geo, gdim)
     gmsh_mesh.write("xdmf")
-    
-    
+        
     micromodel = getMicroModel(mesh_micro_name, gdim)  
     
-    nstrain = 3
-    Gmacro = np.array([0.1,0.3,-0.2])
     micromodel.setCanonicalproblem()
     micromodel.restart_initial_guess()
     micromodel.setUpdateFlag(False)
-    #A_ref = micromodel.getTangent(Gmacro)
-    # A_per = get_tangent_pertubation_central_difference(Gmacro, micromodel)
-    # A_mp = micromodel.compute_tangent_multiphenics()
-    # A_lt = micromodel.compute_tangent_localisation_tensors_full_notation()
-    # #print(A_ref)
-    # print(A_per)
-    # print(A_mp)
-    # print(A_lt)
-    # #print(np.linalg.norm(A_mp - A_lt)/np.linalg.norm(A_lt))
-    
-    # [[3.51106828e+02 1.86439244e+02 5.23925256e-02]
-    #  [1.86439244e+02 3.51220939e+02 8.36037683e-02]
-    #  [5.23925256e-02 8.36037683e-02 1.11627867e+02]]
+
     KGG, SG = micromodel.compute_tangent_localisation_tensors()
     KHH, SH = micromodel.compute_hypertangent()
     KGH = micromodel.compute_mixedtangent(SG,SH)

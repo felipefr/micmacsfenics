@@ -285,11 +285,13 @@ class MicroConstitutiveModelHighOrder: # TODO derive it again from a base class
         end = timer()
         print('time assembling system', end - start)
         
-        eye = ufl.Identity(self.nvoigt)
-        S = eye # localization tensor
+        
+        eye_np = np.eye(self.nvoigt)
+        sol_list = []
         for i_ in range(self.nvoigt):
+            sol_list.append(df.Function(self.Uh))
             start = timer()            
-            self.Eps.assign(df.Constant(eye[i_,:]))
+            self.Eps.assign(df.Constant(eye_np[i_,:]))
             
             F = mp.block_assemble(f)
             if(len(bcs) > 0):
@@ -298,7 +300,11 @@ class MicroConstitutiveModelHighOrder: # TODO derive it again from a base class
             solver.solve(A, sol.block_vector(), F)
             sol.block_vector().block_function().apply("to subfunctions")
             
-            S += ufl.outer(ft.symgrad_mandel(sol[0]), eye[i_,:])
+            sol_list[-1].assign(sol[0])
+        
+        eye = ufl.Identity(self.nvoigt)
+        S = ufl.Identity(self.nvoigt) + sum([ufl.outer(ft.symgrad_mandel(sol_list[i]), eye[i,:]) 
+                                             for i in range(self.nvoigt) ])
             
         ij, kl, pq, rs = ufl.indices(4)
         self.tangenthom[:,:] = ft.Integral( df.as_tensor(S[pq,ij]*self.Cmu[pq,rs]*S[rs,kl] , (ij,kl)), 
@@ -306,7 +312,7 @@ class MicroConstitutiveModelHighOrder: # TODO derive it again from a base class
         end = timer()
         print('time in solving system', end - start)
 
-        return self.tangenthom
+        return self.tangenthom, S
 
 # hyper tangent (high-order)
     def compute_hypertangent(self):
@@ -337,12 +343,12 @@ class MicroConstitutiveModelHighOrder: # TODO derive it again from a base class
         end = timer()
         print('time assembling system', end - start)
         
-        eye = ufl.Identity(nmandel3rd)
-        # show be according to the Stilde below (not matching dimension)
-        S = ufl.outer(ufl.Identity(self.nvoigt), self.y)   # localization tensor
+        eye_np = np.eye(nmandel3rd)
+        sol_list = []
         for i_ in range(nmandel3rd):
+            sol_list.append(df.Function(self.Uh))
             start = timer()            
-            H.assign(df.Constant(eye[i_,:]))
+            H.assign(df.Constant(eye_np[i_,:]))
             
             F = mp.block_assemble(f)
             if(len(bcs) > 0):
@@ -350,17 +356,48 @@ class MicroConstitutiveModelHighOrder: # TODO derive it again from a base class
 
             solver.solve(A, sol.block_vector(), F)
             sol.block_vector().block_function().apply("to subfunctions")
+            sol_list[-1].assign(sol[0])
+        
             
-            S += ufl.outer(ft.symgrad_mandel(sol[0]), eye[i_,:])
-            
+        S = df.as_tensor([[self.y[0],0,0,self.y[1],0,0],
+                          [0,self.y[0],0,0,self.y[1],0],
+                          [0,0,self.y[0],0,0,self.y[1]]])
+        
+        eye = ufl.Identity(nmandel3rd)
+        S += sum([ufl.outer(ft.symgrad_mandel(sol_list[i]), eye[i,:]) 
+                              for i in range(nmandel3rd) ])
+        
         ijk, lmn, pq, rs = ufl.indices(4)
         hypertanghom = ft.Integral( df.as_tensor(S[pq,ijk]*self.Cmu[pq,rs]*S[rs,lmn] , (ijk,lmn)), 
                                          self.mesh.dx, (nmandel3rd, nmandel3rd))/self.vol
         end = timer()
         print('time in solving system', end - start)
 
-        return hypertanghom
+        return hypertanghom, S
 
+# hyper tangent (high-order)
+    def compute_mixedtangent(self, SG, SH):
+        
+        nmandel3rd = 6
+        H = df.Constant(np.zeros(nmandel3rd))
+        H_full = ft.mandel2tensor3rd(H)
+        
+        # It should be abolished (solution should be precomputed)
+        self.multiscaleModel = listMultiscaleModels[self.bnd_model[0]]
+        form = self.multiscaleModel(self.mesh, self.others)
+        W = form.W 
+        sol = mp.BlockFunction(W)
+        
+        eps = self.Eps  + ft.tensor2mandel(df.dot(H_full, self.y)) + ft.symgrad_mandel(sol[0]) # micro-strain
+        eps_var = df.variable(eps)
+        self.sigmu, self.Cmu = ft.get_stress_tang_from_psi(self.psi_mu, eps_var, eps_var) 
+
+        
+        ij, lmn, pq, rs = ufl.indices(4)
+        mixedtanghom = ft.Integral( df.as_tensor(SG[pq,ij]*self.Cmu[pq,rs]*SH[rs,lmn] , (ij,lmn)), 
+                                         self.mesh.dx, (self.nvoigt, nmandel3rd))/self.vol
+
+        return mixedtanghom
 
 
     def compute_tangent_multiphenics(self):

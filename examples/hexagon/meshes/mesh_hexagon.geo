@@ -1,12 +1,15 @@
-a = 1.0; // radius hexagon
-t = 0.1; // thickness
+a = 1.0;
+b = a/Sqrt(3.); // radius hexagon
+t_article = 0.1;
+t = t_article/Sqrt(3.); // thickness
 angle = Pi/3.0;
+phase = -Pi/6.0;
 divisions = 20;
 lc = a/divisions;
 
 For i In {1:6}   // array indexing starts with zero
-  Point(i)= {a*Cos(i*angle) ,  a*Sin(i*angle), 0, lc};
-  Point(6+i)= {(a-t)*Cos(i*angle) ,  (a-t)*Sin(i*angle), 0, lc};
+  Point(i)= {b*Cos(i*angle + phase) ,  b*Sin(i*angle + phase), 0, lc};
+  Point(6+i)= {(b-t)*Cos(i*angle + phase) ,  (b-t)*Sin(i*angle + phase), 0, lc};
 EndFor
 
 For i In {1:5}   // array indexing starts with zero
