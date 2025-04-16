@@ -55,7 +55,7 @@ def getMicroModel(mesh_micro_name= "../meshes/mesh_micro.xdmf", gdim=2):
     # mesh_micro_name = 'meshes/mesh_micro.xdmf'
     lamb_ref = 432.099
     mu_ref = 185.185
-    bndModel_micro = ['MRHO', [1,2]]
+    bndModel_micro = ['hexper', [1,2]]
     
     psi_mu = ft.psi_hookean_nonlinear_lame
     mesh_micro = ft.Mesh(mesh_micro_name)
@@ -120,6 +120,7 @@ if __name__ == "__main__":
     # [[3.51106828e+02 1.86439244e+02 5.23925256e-02]
     #  [1.86439244e+02 3.51220939e+02 8.36037683e-02]
     #  [5.23925256e-02 8.36037683e-02 1.11627867e+02]]
+    np.set_printoptions(precision=3)
     KGG, SG = micromodel.compute_tangent_localisation_tensors()
     KHH, SH = micromodel.compute_hypertangent()
     KGH = micromodel.compute_mixedtangent(SG,SH)

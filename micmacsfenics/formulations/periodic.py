@@ -58,3 +58,46 @@ class FormulationPeriodic(MultiscaleFormulation):
 
         return df.VectorFunctionSpace(self.mesh, "CG", polyorder,
                                       constrained_domain=periodicity)
+
+
+# Alternative implementation
+# def __init__
+#     # vector mapping the right surface to the left
+#     self.vR2L = (self.x1 - self.x0)*np.array([-1., 0.])  
+#     # vector mapping the top surface to the bottom
+#     self.vT2B = (self.y1 - self.y0)*np.array([0., -1.])  
+    
+#     super().__init__(**kwargs)
+
+# def inside(self, x, on_boundary):
+#     # return True if on left or bottom boundary AND NOT
+#     # on one of the two corners Bottom-right or Left-top
+#     if(on_boundary):
+#         return ( (self.is_left(x) and not self.is_top(x)) or 
+#                  (self.is_bottom(x) and not self.is_right(x)) )
+
+#     return False
+
+# def is_left(self, x):
+#     return df.near(x[0], self.x0)
+
+# def is_right(self, x):
+#     return df.near(x[0], self.x1)
+
+# def is_bottom(self, x):
+#     return df.near(x[1], self.y0)
+
+# def is_top(self, x):
+#     return df.near(x[1], self.y1)
+
+# def map(self, x, y):
+#     if(self.is_right(x) and self.is_top(x)):
+#         y[:] = x[:] + self.vR2L + self.vT2B 
+#     elif(self.is_right(x)):
+#         y[:] = x[:] + self.vR2L
+#     elif(self.is_top(x)):
+#         y[:] = x[:] + self.vT2B
+#     else:
+#         y[0] = x[0]
+#         y[1] = x[1]
+        

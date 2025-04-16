@@ -30,6 +30,7 @@ from micmacsfenics.formulations.linear import FormulationLinear
 from micmacsfenics.formulations.periodic import FormulationPeriodic
 from micmacsfenics.formulations.minimally_constrained import FormulationMinimallyConstrained
 from micmacsfenics.formulations.minimally_constrained_high_order import FormulationMinimallyConstrainedHighOrder
+from micmacsfenics.formulations.hexagonal_periodic import FormulationHexagonalPeriodic
 
 
 solver_parameters = {"nonlinear_solver": "newton",
@@ -43,7 +44,8 @@ listMultiscaleModels = {'MR': FormulationMinimallyConstrained,
                         'lin': FormulationLinear,
                         'lag': FormulationDirichletLagrange, 
                         'dnn': FormulationDirichletLagrange,
-                        'MRHO': FormulationMinimallyConstrainedHighOrder}
+                        'MRHO': FormulationMinimallyConstrainedHighOrder,
+                        'hexper': FormulationHexagonalPeriodic}
 
 
 class MicroConstitutiveModelHighOrder: # TODO derive it again from a base class
@@ -64,7 +66,7 @@ class MicroConstitutiveModelHighOrder: # TODO derive it again from a base class
         self.psi_mu = psi_mu
         
         
-        self.Uh = df.VectorFunctionSpace(self.mesh, "CG", 1)     
+        self.Uh = df.VectorFunctionSpace(self.mesh, "CG", 2)     
         
         
         # by default linear model "lin"
@@ -263,16 +265,16 @@ class MicroConstitutiveModelHighOrder: # TODO derive it again from a base class
 # This is the most mature implementation
     def compute_tangent_localisation_tensors(self):
         
-        self.multiscaleModel = listMultiscaleModels[self.bnd_model[0]]
-        form = self.multiscaleModel(self.mesh, self.others)
-        W = form.W 
+        multiscale_model_init = listMultiscaleModels[self.bnd_model[0]]
+        self.MSmodel = multiscale_model_init(self.mesh, self.others)
+        W = self.MSmodel.W 
         sol = mp.BlockFunction(W)
         
         eps = self.Eps  + ft.symgrad_mandel(sol[0]) # micro-strain
         eps_var = df.variable(eps)
         self.sigmu, self.Cmu = ft.get_stress_tang_from_psi(self.psi_mu, eps_var, eps_var) 
 
-        a, f, bcs, W = form(self.Cmu, self.Eps)       
+        a, f, bcs, W = self.MSmodel(self.Cmu, self.Eps)       
         
         start = timer()
         A = mp.block_assemble(a)
@@ -321,16 +323,16 @@ class MicroConstitutiveModelHighOrder: # TODO derive it again from a base class
         H = df.Constant(np.zeros(nmandel3rd))
         H_full = ft.mandel2tensor3rd(H)
         
-        self.multiscaleModel = listMultiscaleModels[self.bnd_model[0]]
-        form = self.multiscaleModel(self.mesh, self.others)
-        W = form.W 
+        multiscale_model_init = listMultiscaleModels[self.bnd_model[0]]
+        self.MSmodel = multiscale_model_init(self.mesh, self.others)
+        W = self.MSmodel.W 
         sol = mp.BlockFunction(W)
         
         eps = self.Eps  + ft.tensor2mandel(df.dot(H_full, self.y)) + ft.symgrad_mandel(sol[0]) # micro-strain
         eps_var = df.variable(eps)
         self.sigmu, self.Cmu = ft.get_stress_tang_from_psi(self.psi_mu, eps_var, eps_var) 
 
-        a, f, bcs, W = form(self.Cmu, ft.tensor2mandel(df.dot(H_full, self.y)))       
+        a, f, bcs, W = self.MSmodel(self.Cmu, ft.tensor2mandel(df.dot(H_full, self.y)))       
         
         start = timer()
         A = mp.block_assemble(a)
@@ -405,8 +407,8 @@ class MicroConstitutiveModelHighOrder: # TODO derive it again from a base class
         
         self.multiscaleModel = listMultiscaleModels[self.bnd_model[0]]
         
-        lamb = df.Constant(432.099)
-        mu = df.Constant(185.185)
+        lamb = df.Constant(11538.461538461537)
+        mu = df.Constant(7692.307692307692)
         
         i, j, k, l = ufl.indices(4)
         delta = ufl.Identity(2)

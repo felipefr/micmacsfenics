@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Wed Apr 16 19:16:29 2025
+
+@author: frocha
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Wed Apr 16 12:18:21 2025
 
 @author: felipe
@@ -44,6 +52,7 @@ import numpy as np
 import ddfenics as dd
 import fetricks as ft 
 from fetricks.mechanics.elasticity_conversions import youngPoisson2lame
+from fetricks.mechanics.elasticity_conversions import youngPoisson2lame_planeStress
 import micmacsfenics as mm
 from timeit import default_timer as timer
 from functools import partial
@@ -65,10 +74,11 @@ def getMicroModel(mesh_micro_name= "../meshes/mesh_micro.xdmf", gdim=2):
     E = 20e3
     nu = 0.3
     
-    lamb, mu = youngPoisson2lame(E,nu)
+    lamb, mu = youngPoisson2lame(E,nu) # plane strain
+    # lamb, mu = youngPoisson2lame_planeStress(E,nu)
     bndModel_micro = ['hexper', [1,2,3]]
     
-    print(lamb)
+    print(lamb + 2*mu)
     print(mu)
     
     print(lamb, mu)
@@ -117,17 +127,30 @@ if __name__ == "__main__":
     micromodel.restart_initial_guess()
     micromodel.setUpdateFlag(False)
     
+    eta = 8
     a = 1
-    t = 0.05
+    t = a/eta 
     Arve = 0.5*np.sqrt(3)*a**2
     As = Arve - 0.5*np.sqrt(3)*(a-t)**2
     fac = As/Arve
 
+    # KGG = micromodel.compute_tangent_multiphenics()
     KGG, SG = micromodel.compute_tangent_localisation_tensors()
-    KHH, SH = micromodel.compute_hypertangent()
-    KGH = micromodel.compute_mixedtangent(SG,SH)
+    # KHH, SH = micromodel.compute_hypertangent()
+    # KGH = micromodel.compute_mixedtangent(SG,SH)
+    
+    KGG = fac*KGG
+    mu1 = KGG[2,2]/2.0
+    lamb1 = KGG[0,0] - 2*mu1
+    lamb2 = KGG[0,1]
+    mu2 = (KGG[0,0]-lamb2)/2
     
     np.set_printoptions(precision=3)
-    print('KGG=', fac*KGG)
-    print('KHH=', fac*KHH)
-    print('KGH=', fac*KGH)
+    print('KGG=', KGG)
+    print(mu1,mu2)
+    print(lamb1,lamb2)
+    print('cP [GPa]=', (lamb1 + 2*mu1)*10**(-3))
+    print('cS [GPa]=', mu2*10**(-3))
+
+    # print('KHH=', fac*KHH)
+    # print('KGH=', fac*KGH)
