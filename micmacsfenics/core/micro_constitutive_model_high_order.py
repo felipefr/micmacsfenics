@@ -31,7 +31,7 @@ from micmacsfenics.formulations.periodic import FormulationPeriodic
 from micmacsfenics.formulations.minimally_constrained import FormulationMinimallyConstrained
 from micmacsfenics.formulations.minimally_constrained_high_order import FormulationMinimallyConstrainedHighOrder
 from micmacsfenics.formulations.hexagonal_periodic import FormulationHexagonalPeriodic
-
+from micmacsfenics.formulations.minimally_constrained_high_order import FormulationMinimallyConstrainedHighOrderHexPeriodic
 
 solver_parameters = {"nonlinear_solver": "newton",
                      "newton_solver": {"maximum_iterations": 20,
@@ -45,7 +45,8 @@ listMultiscaleModels = {'MR': FormulationMinimallyConstrained,
                         'lag': FormulationDirichletLagrange, 
                         'dnn': FormulationDirichletLagrange,
                         'MRHO': FormulationMinimallyConstrainedHighOrder,
-                        'hexper': FormulationHexagonalPeriodic}
+                        'hexper': FormulationHexagonalPeriodic,
+                        'MRHOHP': FormulationMinimallyConstrainedHighOrderHexPeriodic}
 
 
 class MicroConstitutiveModelHighOrder: # TODO derive it again from a base class
@@ -66,7 +67,7 @@ class MicroConstitutiveModelHighOrder: # TODO derive it again from a base class
         self.psi_mu = psi_mu
         
         
-        self.Uh = df.VectorFunctionSpace(self.mesh, "CG", 2)     
+        self.Uh = df.VectorFunctionSpace(self.mesh, "CG", 1)     
         
         
         # by default linear model "lin"

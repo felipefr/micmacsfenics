@@ -18,6 +18,7 @@ import dolfin as df
 import ufl
 import fetricks as ft
 from micmacsfenics.formulations.multiscale_formulation import MultiscaleFormulation
+from micmacsfenics.formulations.hexagonal_periodic import FormulationHexagonalPeriodic
 
 
 class FormulationMinimallyConstrainedHighOrder(MultiscaleFormulation):
@@ -68,3 +69,6 @@ class FormulationMinimallyConstrainedHighOrder(MultiscaleFormulation):
         ff.append(0)
 
         return [aa, ff]
+
+class FormulationMinimallyConstrainedHighOrderHexPeriodic(FormulationMinimallyConstrainedHighOrder,FormulationHexagonalPeriodic):
+    pass

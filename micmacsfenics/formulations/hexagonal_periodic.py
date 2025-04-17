@@ -29,20 +29,25 @@ from micmacsfenics.formulations.multiscale_formulation import MultiscaleFormulat
 
 class HexagonalPeriodicBoundary(df.SubDomain):
     # Left boundary is "target domain" G
-    def __init__(self, a = 1.0, phase = np.pi, **kwargs):
+    def __init__(self, a = 1.0, phase = -np.pi, **kwargs):
         self.a = a # distance between two periodic faces
+        self.d = 2*a/np.sqrt(3.) # distance between two opposite nodes (diameter)
         self.angles = np.linspace(phase, phase + 2*np.pi/3., 3)
-        # unit vector periodicities
+        
+        # unit vector periodicities (faces)
         self.v = np.array([[np.cos(ang), np.sin(ang)] for ang in self.angles])
+        self.w = np.array( [ (self.v[0]+self.v[1])/np.linalg.norm(self.v[0]+self.v[1]),
+                             (self.v[1]+self.v[2])/np.linalg.norm(self.v[1]+self.v[2]),
+                             (self.v[2]-self.v[0])/np.linalg.norm(self.v[2]-self.v[0])])
         
         super().__init__(**kwargs)
 
     def inside(self, x, on_boundary):
         # return True if on face 0,1 or 2, excluding corners 0-5 and 2-3
         if(on_boundary):
-            return ( self.is_on_face_i(x, 1) or
-                     (self.is_on_face_i(x, 0) and not self.is_on_face_i(x, 5)) or 
-                     (self.is_on_face_i(x, 2) and not self.is_on_face_i(x, 3)) )
+            one_of_master_faces = self.is_on_face_i(x, 0) or (self.is_on_face_i(x, 1) or self.is_on_face_i(x, 2))
+            node3 = self.is_on_face_i(x, 2) and self.is_on_face_i(x, 3)
+            return (one_of_master_faces and not node3)
 
         return False
 
@@ -52,6 +57,7 @@ class HexagonalPeriodicBoundary(df.SubDomain):
         d = np.dot(np.array([np.cos(ang),np.sin(ang)]) , x)
         return df.near(d, 0.5*self.a)
     
+#    wrong corner mapping
     def map(self, x, y):
         if((self.is_on_face_i(x, 3) and self.is_on_face_i(x, 4)) or (self.is_on_face_i(x, 4) and self.is_on_face_i(x, 5)) ):
             y[:] = x[:] + self.a*self.v[1,:] 
@@ -68,6 +74,28 @@ class HexagonalPeriodicBoundary(df.SubDomain):
         else:
             y[0] = x[0]
             y[1] = x[1]
+
+    # def map(self, x, y):
+    #     node3 = self.is_on_face_i(x, 2) and self.is_on_face_i(x, 3)
+    #     node4 = self.is_on_face_i(x, 3) and self.is_on_face_i(x, 4)
+    #     node5 = self.is_on_face_i(x, 4) and self.is_on_face_i(x, 5)
+        
+    #     if(node3):
+    #         y[:] = x[:] - self.d*self.w[2,:]
+    #     elif(node4):
+    #         y[:] = x[:] + self.d*self.w[0,:]
+    #     elif(node5):
+    #         y[:] = x[:] + self.d*self.w[1,:]                
+    #     elif(self.is_on_face_i(x, 3)):
+    #         y[:] = x[:] + self.a*self.v[0,:]
+    #     elif(self.is_on_face_i(x, 4)):
+    #         y[:] = x[:] + self.a*self.v[1,:]
+    #     elif(self.is_on_face_i(x, 5)):
+    #         y[:] = x[:] + self.a*self.v[2,:]
+    #     else:
+    #         y[0] = x[0]
+    #         y[1] = x[1]
+
 
 # similar values but higher values where should be zero
     # def map(self, x, y):

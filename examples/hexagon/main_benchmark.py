@@ -66,7 +66,7 @@ def getMicroModel(mesh_micro_name= "../meshes/mesh_micro.xdmf", gdim=2):
     nu = 0.3
     
     lamb, mu = youngPoisson2lame(E,nu)
-    bndModel_micro = ['hexper', [1,2,3]]
+    bndModel_micro = ['MRHOHP', [1,2,3]]
     
     print(lamb)
     print(mu)
@@ -117,17 +117,29 @@ if __name__ == "__main__":
     micromodel.restart_initial_guess()
     micromodel.setUpdateFlag(False)
     
-    a = 1
-    t = 0.05
+    a = 1.0
     Arve = 0.5*np.sqrt(3)*a**2
-    As = Arve - 0.5*np.sqrt(3)*(a-t)**2
-    fac = As/Arve
+    As = micromodel.vol
+    # fac = As/Arve
+    fac = 1.0
 
     KGG, SG = micromodel.compute_tangent_localisation_tensors()
     KHH, SH = micromodel.compute_hypertangent()
     KGH = micromodel.compute_mixedtangent(SG,SH)
+
+    KGG = fac*KGG
+    KHH = fac*KHH
+    KGH = fac*KGH
+    
+    mu1 = KGG[2,2]/2.0
+    lamb1 = KGG[0,0] - 2*mu1
+    lamb2 = KGG[0,1]
+    mu2 = (KGG[0,0]-lamb2)/2
     
     np.set_printoptions(precision=3)
-    print('KGG=', fac*KGG)
-    print('KHH=', fac*KHH)
-    print('KGH=', fac*KGH)
+    print('cP [GPa]=', (lamb1 + 2*mu1)*10**(-3))
+    print('cS [GPa]=', mu2*10**(-3))
+    
+    print('KGG=', KGG)
+    print('KHH=', KHH)
+    print('KGH=', KGH)

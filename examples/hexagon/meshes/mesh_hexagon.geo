@@ -1,11 +1,11 @@
 a = 1.0;
-eta = 8;
+eta = 10;
 b = a/Sqrt(3.); // radius hexagon
 t_article = a/eta;
 t = t_article/Sqrt(3.); // thickness
 angle = Pi/3.0;
-phase = -Pi/6.0;
-divisions = 100;
+phase = -Pi/2.0;
+divisions = 20;
 lc = a/divisions;
 
 For i In {1:6}   // array indexing starts with zero

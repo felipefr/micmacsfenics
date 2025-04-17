@@ -76,7 +76,8 @@ def getMicroModel(mesh_micro_name= "../meshes/mesh_micro.xdmf", gdim=2):
     
     lamb, mu = youngPoisson2lame(E,nu) # plane strain
     # lamb, mu = youngPoisson2lame_planeStress(E,nu)
-    bndModel_micro = ['hexper', [1,2,3]]
+    bndModel_micro = ['MRHOHP', [1,2,3]]
+    # bndModel_micro = ['hexper', [1,2,3]]
     
     print(lamb + 2*mu)
     print(mu)
