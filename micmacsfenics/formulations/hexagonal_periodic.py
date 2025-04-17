@@ -29,7 +29,7 @@ from micmacsfenics.formulations.multiscale_formulation import MultiscaleFormulat
 
 class HexagonalPeriodicBoundary(df.SubDomain):
     # Left boundary is "target domain" G
-    def __init__(self, a = 1.0, phase = -np.pi, **kwargs):
+    def __init__(self, a = 1.0, phase = np.pi, **kwargs):
         self.a = a # distance between two periodic faces
         self.angles = np.linspace(phase, phase + 2*np.pi/3., 3)
         # unit vector periodicities
@@ -40,55 +40,42 @@ class HexagonalPeriodicBoundary(df.SubDomain):
     def inside(self, x, on_boundary):
         # return True if on face 0,1 or 2, excluding corners 0-5 and 2-3
         if(on_boundary):
-            return ( self.is_face1(x) or
-                     (self.is_face0(x) and not self.is_face5(x)) or 
-                     (self.is_face2(x) and not self.is_face3(x)) )
+            return ( self.is_on_face_i(x, 1) or
+                     (self.is_on_face_i(x, 0) and not self.is_on_face_i(x, 5)) or 
+                     (self.is_on_face_i(x, 2) and not self.is_on_face_i(x, 3)) )
 
         return False
 
-    # clock-wise rotation of theta = ang
-    def rotation_matrix(self, ang):
-        return np.array([[np.cos(ang),np.sin(ang)],
-                         [-np.sin(ang), np.cos(ang)]])
+    def is_on_face_i(self, x, i):
+        ang = self.angles[i] if i<3 else (self.angles[i-3] + np.pi)
+        # (R@x)_1 (the only important component). R is clock-wise rotation
+        d = np.dot(np.array([np.cos(ang),np.sin(ang)]) , x)
+        return df.near(d, 0.5*self.a)
     
-    def is_on_face_i(self, x, i, is_opposite = 0.0):
-        y = self.rotation_matrix(self.angles[i] + is_opposite*np.pi)@x
-        return df.near(y[0], 0.5*self.a)
-    
-    def is_face0(self, x):
-        return self.is_on_face_i(x, 0)
-
-    def is_face1(self, x):
-        return self.is_on_face_i(x, 1)
-
-    def is_face2(self, x):
-        return self.is_on_face_i(x, 2)
-
-    def is_face3(self, x):
-        return self.is_on_face_i(x, 0, is_opposite=1.0)
-    
-    def is_face4(self, x):
-        return self.is_on_face_i(x, 1, is_opposite=1.0)
-
-    def is_face5(self, x):
-        return self.is_on_face_i(x, 2, is_opposite=1.0)
- 
     def map(self, x, y):
-        if((self.is_face3(x) and self.is_face4(x)) or (self.is_face4(x) and self.is_face5(x)) ):
+        if((self.is_on_face_i(x, 3) and self.is_on_face_i(x, 4)) or (self.is_on_face_i(x, 4) and self.is_on_face_i(x, 5)) ):
             y[:] = x[:] + self.a*self.v[1,:] 
-        elif(self.is_face0(x) and self.is_face5(x)):
+        elif(self.is_on_face_i(x, 0) and self.is_on_face_i(x, 5)):
             y[:] = x[:] + self.a*self.v[2,:]
-        elif(self.is_face2(x) and self.is_face3(x)):
+        elif(self.is_on_face_i(x, 2) and self.is_on_face_i(x, 3)):
             y[:] = x[:] + self.a*self.v[0,:]
-        elif(self.is_face3(x)):
+        elif(self.is_on_face_i(x, 3)):
             y[:] = x[:] + self.a*self.v[0,:]
-        elif(self.is_face4(x)):
+        elif(self.is_on_face_i(x, 4)):
             y[:] = x[:] + self.a*self.v[1,:]
-        elif(self.is_face5(x)):
+        elif(self.is_on_face_i(x, 5)):
             y[:] = x[:] + self.a*self.v[2,:]
         else:
             y[0] = x[0]
             y[1] = x[1]
+
+# similar values but higher values where should be zero
+    # def map(self, x, y):
+    #     y[0] = x[0]
+    #     y[1] = x[1]
+    #     for i in range(3,6):
+    #         if(self.is_on_face_i(x, i)):
+    #             y[:] += self.a*self.v[i-3,:]
         
 
 class FormulationHexagonalPeriodic(MultiscaleFormulation):
