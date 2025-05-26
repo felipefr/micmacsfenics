@@ -43,6 +43,15 @@ class MicroMacro:
         else:
             self.micromodels = self.W.nqpts*[None] # just a placeholder 
         
+
+        self.unpack_tang = {3 : ft.as_sym_tensor_3x3, # 2d mandel
+                            4 : ft.as_sym_tensor_4x4, # 2d unsymmetric (assumed lexigraphic)
+                            # 6 : ft.as_sym_tensor_6x6, # 3d mandel (not implemented)
+                            9 : ft.as_sym_tensor_9x9}[self.size_strain] # 3d unsymmetric (assumed lexigraphic)
+                            
+        
+            
+        
     def set_track_strain(self, strain):
         self.strain_evaluator = ft.QuadratureEvaluator(strain, self.strain_array, self.mesh, self.W)
         
@@ -51,13 +60,13 @@ class MicroMacro:
         self.micromodels[i] = micro_model
                 
     def tangent_op(self, de):
-        return ufl.dot(ft.as_sym_tensor_3x3(self.tangent), de) 
+        return ufl.dot(self.unpack_tang(self.tangent), de) 
 
     def update(self, dummy1, dummy2): # dummy variables to fit callback arguments
         self.strain_evaluator()
         
         for s, t, e, m in zip(self.stress_array, self.tangent_array, self.strain_array, self.micromodels):
             m.solve_microproblem(e) 
-            s[:], t[:] = m.get_stress_tangent()  
-
+            s[:], t[:] = m.get_stress_tangent(e) # explicitly passing e for debugging microscale truss case  
+            # s[:], t[:] = m.get_stress_tangent() # 
 
