@@ -5,6 +5,12 @@ Created on Mon May 26 19:49:17 2025
 
 @author: frocha
 """
+
+# To Do: - In terms of fluctuations (better convergence?)
+# - store u for each gauss point
+# - initial guess truss
+# - overrelaxed Newton   
+
 import sys
 sys.path.append('/home/frocha/sources/pyola/')
 sys.path.append("/home/frocha/sources/fetricksx/")
