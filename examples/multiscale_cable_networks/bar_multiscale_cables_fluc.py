@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Tue May 27 13:46:45 2025
+
+@author: frocha
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Tue May 27 12:03:37 2025
 
 @author: frocha
@@ -56,7 +64,7 @@ from mpi4py import MPI
 import fetricksx as ft
 import micmacsfenicsx as mm
 
-from micro_model_truss import MicroModelTruss
+from micro_model_truss_fluctuation import MicroModelTrussFluctuation
 import meshio
 
 import toy_solver as pyola
@@ -68,7 +76,7 @@ def getMicroModel(param):
     param_truss = param
     param_truss['A'] = mesh_vtk.cell_data['A'][0] # otherwise is a list with an array
     
-    return MicroModelTruss(mesh_micro, param_truss)
+    return MicroModelTrussFluctuation(mesh_micro, param_truss)
 
     
 param={
@@ -170,7 +178,7 @@ hom.micromodels = micromodels_cable
 start = timer()
 problem = ft.CustomNonlinearProblem(res, u, bcs_D, jac)
 solver = ft.CustomNonlinearSolver(problem, callbacks = [hom.update])
-solver.solve(report = True, Nitermax = 50, omega = 0.9)
+solver.solve(report = True, Nitermax = 50, omega = 0.8)
 end = timer()
 
 # posprocessing

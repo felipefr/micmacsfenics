@@ -91,10 +91,10 @@ class MicroModelTruss:
     
     def solve_microproblem(self, G, u0 = None, update_u = True):        
         self.bcs[0].value = self.get_ufixed(G)
-        u0 = Function(self.U) if type(u0) == type(None) else copy.deepcopy(u0)
+        u0 = copy.deepcopy(self.u) 
         forces = np.zeros_like(u0)
         u =  solve_nonlinear(self.mesh, self.U, self.dh, self.form, forces, 
-                             self.bcs, uold = u0, tol = 1e-8, omega = 0.5, log = False)
+                             self.bcs, uold = u0, tol = 1e-8, omega = 0.9, log = False)
         if(update_u):
             self.u.array = u.array
             self.G_last[:] = G[:]
@@ -106,8 +106,10 @@ class MicroModelTruss:
         # return ft.tensor2unsym(self.homogenise_stress()), ft.sym_flatten_4x4_np(self.homogenise_tang_ffd())
 
     def homogenise_stress(self):        
-        P = self.homogeniseP_given_disp(self.u)    
-        return P
+        return self.homogeniseP_given_disp(self.u)    
+
+    def homogenise_tangent(self):        
+        return self.homogenise_tangent_given_disp(self.u)
 
     def homogenise_stress_solve(self, G, u0 = None): 
         u = self.solve_microproblem(G, u0, update_u = False)
@@ -134,7 +136,7 @@ class MicroModelTruss:
         return P
 
     # Analytical tangent in "unsym flattening": (00,11,01,10) order
-    def homogenise_tangent(self):
+    def homogenise_tangent_given_disp(self, u):
         # easier to work in the lexigraphic order and then permute
         ass = Assembler(self.mesh, self.dh)
         
@@ -143,7 +145,7 @@ class MicroModelTruss:
         for k in range(2):
             for l in range(2):
                 self.form_can.set_kl(k, l)
-                K, F_kl = ass.assemble(self.form_can, self.u, self.u)
+                K, F_kl = ass.assemble(self.form_can, u, u)
                 for bc in self.bcs:
                     bc.apply(K,F_kl)
                 
@@ -154,7 +156,7 @@ class MicroModelTruss:
         for c in range(self.mesh.n_cells):
             X = self.mesh.X[self.mesh.cells[c]]
             cell_dofs = self.dh.get_cell_dofs(c)[0] # only for the first space (U)
-            uL = self.u.array[cell_dofs]
+            uL = u.array[cell_dofs]
             
             A = self.form.A[c]
             a, b, lmbda, lmbda_old, L0, Bmat = self.form.element.get_truss_kinematics(X.flatten(), uL, uL) # last argument is dummy
