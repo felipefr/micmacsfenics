@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Tue May 27 12:03:37 2025
+
+@author: frocha
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 @author: felipe rocha
 Created on Thu Jun 13 16:56:55 2024
 
@@ -78,13 +86,20 @@ param={
 'dirichlet': [],
 'neumann': [],
 'msh_file' : "bar.msh",
-'out_file' : "bar_multiscale_truss.xdmf",
+'out_file' : "bar_multiscale.xdmf",
 'create_mesh': True, 
 'solver_atol' : 1e-12,
 'solver_rtol' : 1e-12,
-'micro_param': {
+'micro_param_truss': {
     'mesh_file' : "cable_network.vtk",
     'model': 'truss', 
+    'E' : 100.0,
+    'eta' : 0.0001,
+    'solver': {'atol' : 1e-12, 'rtol' : 1e-12}
+    },
+'micro_param_cable': {
+    'mesh_file' : "cable_network.vtk",
+    'model': 'cable', 
     'E' : 100.0,
     'eta' : 0.0001,
     'solver': {'atol' : 1e-12, 'rtol' : 1e-12}
@@ -119,19 +134,10 @@ Wtan = ft.CustomQuadratureSpace(msh, n_tan, degree_quad = 0)
 
 ng = W.scalar_space.dofmap.index_map.size_global 
 # microModels = ng*[getMicroModel(param['micro_param'])] # with RVE repetition
-microModels = [getMicroModel(param['micro_param']) for i in range(ng)]  # without RVE repetition
+micromodels_truss = [getMicroModel(param['micro_param_truss']) for i in range(ng)]  # without RVE repetition
+micromodels_cable = [getMicroModel(param['micro_param_cable']) for i in range(ng)]
 
-hom = mm.MicroMacro(W, Wtan, W.dxm, microModels)
-
-# ===== consistency tangent test ================= 
-# m = microModels[0]
-# G = np.array([0.01,0.02,0.03,0.01])
-# m.solve_microproblem(G)
-# P, D = m.get_stress_tangent(None)
-# print(P, D)
-# D2 = ft.sym_flatten_4x4_np(m.homogenise_tang_ffd(G))
-# print(D2)
-# ===== consistency tangent test =================
+hom = mm.MicroMacro(W, Wtan, W.dxm, micromodels_truss)
 
 bcs_D = []
 for bc in param['dirichlet']:
@@ -154,6 +160,17 @@ solver = ft.CustomNonlinearSolver(problem, callbacks = [hom.update])
 solver.solve(report = True, Nitermax = 50)
 end = timer()
 print("time: ", end - start)
+
+for i in range(ng):
+    micromodels_cable[i].u = micromodels_truss[i].u 
+    
+hom.micromodels = micromodels_cable
+
+start = timer()
+problem = ft.CustomNonlinearProblem(res, u, bcs_D, jac)
+solver = ft.CustomNonlinearSolver(problem, callbacks = [hom.update])
+solver.solve(report = True, Nitermax = 50, omega = 0.5)
+end = timer()
 
 # posprocessing
 mesh = u.function_space.mesh

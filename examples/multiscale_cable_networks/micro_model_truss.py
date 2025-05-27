@@ -7,9 +7,9 @@ Created on Mon May 26 19:49:17 2025
 """
 
 # To Do: - In terms of fluctuations (better convergence?)
-# - store u for each gauss point
-# - initial guess truss
-# - overrelaxed Newton   
+# - store u for each gauss point : done (it does not work)
+# - initial guess truss : done (it does not work)
+# - overrelaxed Newton  : done (it does not work) 
 
 import sys
 sys.path.append('/home/frocha/sources/pyola/')
@@ -94,7 +94,7 @@ class MicroModelTruss:
         u0 = Function(self.U) if type(u0) == type(None) else copy.deepcopy(u0)
         forces = np.zeros_like(u0)
         u =  solve_nonlinear(self.mesh, self.U, self.dh, self.form, forces, 
-                             self.bcs, uold = u0, tol = 1e-8, log = False)
+                             self.bcs, uold = u0, tol = 1e-8, omega = 0.5, log = False)
         if(update_u):
             self.u.array = u.array
             self.G_last[:] = G[:]
