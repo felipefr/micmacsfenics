@@ -64,7 +64,7 @@ class MicroModelTruss:
         self.dh = DOFHandler(self.mesh)
         self.dh.add_space(self.U, name = 'displacement')
         self.form = TrussLocalIntegrator(param['A'], self.material, self.U)
-        self.form_can = TrussLocalCanonicalIntegrator(param['A'], self.material, self.U)
+        self.form_can = TrussLocalCanonicalIntegrator(param['A'], self.material_can, self.U)
         
         self.ngamma_nodes = len(mesh.bnd_nodes)
         uD = np.zeros((self.ngamma_nodes, 2))
@@ -73,33 +73,35 @@ class MicroModelTruss:
         self.yG = np.array([0.5,0.5])
         self.vol = 1.0
         self.u = Function(self.U)
-
+        self.G_last = np.zeros(4)
+        
     def get_ufixed(self, G):
         G2x2 = ft.unsym2tensor_np(G)
         uD = np.zeros_like(self.bcs[0].value)
         for i, j in enumerate(self.mesh.bnd_nodes):
             uD[i,:] = G2x2@(self.mesh.X[j,:] - self.yG)
-            
+    
         return uD
     
     def solve_microproblem(self, G, u0 = None, update_u = True):        
         self.bcs[0].value = self.get_ufixed(G)
         u0 = Function(self.U) if type(u0) == type(None) else copy.deepcopy(u0)
         forces = np.zeros_like(u0)
-        u =  solve_nonlinear(self.mesh, self.U, self.dh, self.form, forces, self.bcs, uold = u0, tol = 1e-8)
+        u =  solve_nonlinear(self.mesh, self.U, self.dh, self.form, forces, 
+                             self.bcs, uold = u0, tol = 1e-8, log = False)
         if(update_u):
-            self.u.array = u.array 
+            self.u.array = u.array
+            self.G_last[:] = G[:]
         return u
 
     # this is done once the microproblem is solved
-    def get_stress_tangent(self, G):
-        # return ft.tensor2unsym(self.homogenise_stress()), ft.sym_flatten_4x4_np(self.homogenise_tangent())
-        return ft.tensor2unsym(self.homogenise_stress()), ft.sym_flatten_4x4_np(self.homogenise_tang_ffd(G))
+    def get_stress_tangent(self):
+        return ft.tensor2unsym(self.homogenise_stress()), ft.sym_flatten_4x4_np(self.homogenise_tangent())
+        # return ft.tensor2unsym(self.homogenise_stress()), ft.sym_flatten_4x4_np(self.homogenise_tang_ffd())
 
     def homogenise_stress(self):        
         P = self.homogeniseP_given_disp(self.u)    
         return P
-
 
     def homogenise_stress_solve(self, G, u0 = None): 
         u = self.solve_microproblem(G, u0, update_u = False)
@@ -125,7 +127,9 @@ class MicroModelTruss:
         
         return P
 
+    # Analytical tangent in "unsym flattening": (00,11,01,10) order
     def homogenise_tangent(self):
+        # easier to work in the lexigraphic order and then permute
         ass = Assembler(self.mesh, self.dh)
         
         self.bcs[0].value[:,:] = 0.0
@@ -161,14 +165,18 @@ class MicroModelTruss:
             for kl in range(4):
                 uklL = ukl_list[kl][cell_dofs]
                 C[:,kl] += V* np.outer(D@Bmat@uklL,a).flatten() 
-        
+            
+        # permutation for the "unsym order"
+        perm = np.array([0,3,1,2]).astype('int')
+        C = C[perm,:][:,perm]
+            
         return C
 
-    def homogenise_tang_ffd(self, G, tau = 1e-7):
-        
+    # Numerical tangent by forward finite differences in "unsym flattening": (00,11,01,10) order
+    def homogenise_tang_ffd(self, G = None, tau = 1e-7):
         P_ref = self.homogeniseP_given_disp(self.u)
         P_ref = ft.tensor2unsym_np(P_ref)
-        Gref = copy.deepcopy(G)
+        Gref = self.G_last[:] if type(G) == type(None) else copy.deepcopy(G) 
         n = len(Gref) 
         base_canonic = np.eye(n)
         Atang = np.zeros((n,n))

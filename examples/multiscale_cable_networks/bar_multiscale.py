@@ -25,15 +25,17 @@ right. We use an isotropic linear material, given two lamé parameters.
 
 
 import os, sys
+import subprocess
 import matplotlib.pyplot as plt
 from timeit import default_timer as timer
 from functools import partial 
 
-# sys.path.append("/home/felipe/sources/fetricksx")
-# sys.path.append("/home/felipe/sources/micmacsfenicsx/")
+whoami = subprocess.Popen("whoami", shell=True, stdout=subprocess.PIPE).stdout.read().decode()[:-1]
+home = "/home/{0}/sources/".format(whoami) 
+sys.path.append(home + "fetricksx")
+sys.path.append(home + "micmacsfenicsx")
+sys.path.append(home + "pyola")
 
-sys.path.append("/home/frocha/sources/fetricksx")
-sys.path.append("/home/frocha/sources/micmacsfenicsx/")
 
 import basix
 import numpy as np
@@ -49,7 +51,6 @@ import micmacsfenicsx as mm
 from micro_model_truss import MicroModelTruss
 import meshio
 
-sys.path.append('/home/frocha/sources/pyola/')
 import toy_solver as pyola
 
 def getMicroModel(param):
@@ -65,8 +66,8 @@ def getMicroModel(param):
 param={
 'lx' : 2.0,
 'ly' : 0.5,
-'nx' : 3, 
-'ny' : 2, 
+'nx' : 5, 
+'ny' : 3, 
 # 'ty' : -0.01,
 'tx' : 0.1,
 'clamped_bc' : 4, 
@@ -83,7 +84,7 @@ param={
 'solver_rtol' : 1e-12,
 'micro_param': {
     'mesh_file' : "cable_network.vtk",
-    'model': 'truss', 
+    'model': 'cable', 
     'E' : 100.0,
     'eta' : 0.0001,
     'solver': {'atol' : 1e-12, 'rtol' : 1e-12}
@@ -95,6 +96,7 @@ param={
 param['dirichlet'].append((param['clamped_bc'], 0, 0.))
 param['dirichlet'].append((param['clamped_bc'], 1, 0.))
 param['neumann'].append((param['load_bc'], 0, param['tx']))
+# param['neumann'].append((param['load_bc'], 1, param['ty']))
 
 n_strain = 4
 n_tan = 10
@@ -119,6 +121,16 @@ ng = W.scalar_space.dofmap.index_map.size_global # only valid because it's one R
 microModels = ng*[getMicroModel(param['micro_param'])] 
 hom = mm.MicroMacro(W, Wtan, W.dxm, microModels)
 
+# ===== consistency tangent test ================= 
+# m = microModels[0]
+# G = np.array([0.01,0.02,0.03,0.01])
+# m.solve_microproblem(G)
+# P, D = m.get_stress_tangent(None)
+# print(P, D)
+# D2 = ft.sym_flatten_4x4_np(m.homogenise_tang_ffd(G))
+# print(D2)
+# ===== consistency tangent test =================
+
 bcs_D = []
 for bc in param['dirichlet']:
     bcs_D.append(ft.dirichletbc(fem.Constant(msh, bc[2]), bc[0], Uh.sub(bc[1])))
@@ -137,7 +149,7 @@ jac = ufl.inner(tangent(ft.grad_unsym(u_)), ft.grad_unsym(v))*dx
 start = timer()
 problem = ft.CustomNonlinearProblem(res, u, bcs_D, jac)
 solver = ft.CustomNonlinearSolver(problem, callbacks = [hom.update])
-solver.solve(report = True)
+solver.solve(report = True, Nitermax = 50)
 end = timer()
 print("time: ", end - start)
 

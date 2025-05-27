@@ -67,6 +67,5 @@ class MicroMacro:
         
         for s, t, e, m in zip(self.stress_array, self.tangent_array, self.strain_array, self.micromodels):
             m.solve_microproblem(e) 
-            s[:], t[:] = m.get_stress_tangent(e) # explicitly passing e for debugging microscale truss case  
-            # s[:], t[:] = m.get_stress_tangent() # 
+            s[:], t[:] = m.get_stress_tangent()
 
