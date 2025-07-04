@@ -146,31 +146,41 @@ for bc in param['dirichlet']:
 def F_ext(v):
     return sum([ ufl.inner(bc[2], v[bc[1]])*msh.ds(bc[0]) for bc in param['neumann']])
 
+# dx = W.dxm
+# stress, tangent = hom.stress, hom.tangent_op
+# hom.set_track_strain(ft.grad_unsym(u))
+
+# res = ufl.inner(stress, ft.grad_unsym(v))*dx - F_ext(v)
+# jac = ufl.inner(tangent(ft.grad_unsym(u_)), ft.grad_unsym(v))*dx
+
+# # other manner 
+# start = timer()
+# problem = ft.CustomNonlinearProblem(res, u, bcs_D, jac)
+# solver = ft.CustomNonlinearSolver(problem, callbacks = [hom.update])
+# # solver.solve(report = True, Nitermax = 50, omega = 1.0)
+# solver.solve(report = True, Nitermax = 50)
+# end = timer()
+# print("time: ", end - start)
+# print(np.linalg.norm(u.x.array))
+
+# for i in range(ng):
+#     micromodels_cable[i].u = micromodels_truss[i].u 
+    
+# hom.micromodels = micromodels_cable
+
 dx = W.dxm
+hom = mm.MicroMacro(W, Wtan, W.dxm, micromodels_cable)
 stress, tangent = hom.stress, hom.tangent_op
 hom.set_track_strain(ft.grad_unsym(u))
 
 res = ufl.inner(stress, ft.grad_unsym(v))*dx - F_ext(v)
 jac = ufl.inner(tangent(ft.grad_unsym(u_)), ft.grad_unsym(v))*dx
 
-# other manner 
 start = timer()
 problem = ft.CustomNonlinearProblem(res, u, bcs_D, jac)
 solver = ft.CustomNonlinearSolver(problem, callbacks = [hom.update])
-solver.solve(report = True, Nitermax = 50, omega = 1.0)
-end = timer()
-print("time: ", end - start)
-print(np.linalg.norm(u.x.array))
-
-for i in range(ng):
-    micromodels_cable[i].u = micromodels_truss[i].u 
-    
-hom.micromodels = micromodels_cable
-
-start = timer()
-problem = ft.CustomNonlinearProblem(res, u, bcs_D, jac)
-solver = ft.CustomNonlinearSolver(problem, callbacks = [hom.update])
-solver.solve(report = True, Nitermax = 50, omega = 0.9)
+# solver.solve(report = True, Nitermax = 50, omega = 0.9)
+solver.solve(report = True, Nitermax = 1, omega = 0.1)
 end = timer()
 
 # posprocessing

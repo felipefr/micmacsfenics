@@ -89,12 +89,12 @@ class MicroModelTruss:
     
         return uD
     
-    def solve_microproblem(self, G, u0 = None, update_u = True):        
+    def solve_microproblem(self, G, u0 = None, update_u = True, tol = 1e-8, omega = 1.0, log = False):        
         self.bcs[0].value = self.get_ufixed(G)
         u0 = copy.deepcopy(self.u) 
         forces = np.zeros_like(u0)
         u =  solve_nonlinear(self.mesh, self.U, self.dh, self.form, forces, 
-                             self.bcs, uold = u0, tol = 1e-8, omega = 0.9, log = False)
+                             self.bcs, uold = u0, tol = tol, omega = omega, log = True)
         if(update_u):
             self.u.array = u.array
             self.G_last[:] = G[:]
