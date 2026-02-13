@@ -52,10 +52,16 @@ import ufl
 from mpi4py import MPI
 from petsc4py.PETSc import ScalarType  # type: ignore
 import fetricksx as ft
-import fetricksx.mechanics.conversions3d as conv3d
-import fetricksx.mechanics.conversions as conv2d  
+import fetricksx.src.mechanics.conversions3d as conv3d
+import fetricksx.src.mechanics.conversions as conv2d  
 
 class MicroModelFiniteStrain:
+    
+    # Counter of calls 
+    countComputeFluctuations = 0
+    countComputeCanonicalProblem = 0
+    countTangentCalls = 0
+    countStressCalls = 0
 
     def __init__(self, mesh, psi_mu, bnd_flags, solver_param=None):
 
@@ -163,6 +169,14 @@ class MicroModelFiniteStrain:
         # self.restart_initial_guess()
         self.Gmacro.value[:] = e[:]
         self.microsolver.solve()
+    
+    # Very general it should be in another class base
+    # seems it is not working
+    def restart_counters(self):
+        self.countComputeFluctuations = 0
+        self.countComputeCanonicalProblem = 0
+        self.countTangentCalls = 0
+        self.countStressCalls = 0   
         
 
         
