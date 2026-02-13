@@ -1,13 +1,11 @@
 # micmacsfenics
-FEniCSx-based implementation for multi-scale problems (FE2) and computational homogenisation. 
-
-Currently, micmacsfenics is going through a complete factorization from the original library in legacy FEniCS. Please check the micmacsfenics_legacy branch for working version of the codes. The main changes will be:
+FEniCSx-based implementation for multi-scale problems (FE2) and computational homogenisation using FEniCS 0.10. Currently, micmacsfenicsx is going through a complete factorization from the original library in legacy FEniCS and codes Fenicsx 0.9 (not fully functional). Please check the fenics_legacy branch for working version of the codes. The main changes will be:
 - Unique way of doing things. Maybe too general, but unique.
-- Use fetricks (https://github.com/felipefr/fetricks) as much as possible for general things, to keep micmacsfenics as compact as possible.
-- Inelasticty using Mfront or dolfinx-external-operator (https://github.com/a-latyshev/)
-- Implementation of the generalised minimally contraint bc (https://doi.org/10.1016/j.ijsolstr.2023.112494)
+- Rely in in a local subset of fetricks (https://github.com/felipefr/fetricks) to keep it as self-contained as possible.
+- Rely on https://bleyerj.github.io/dolfinx_materials/ for inelastic problems.
+- Implementation of the generalised minimally contraint bc (https://doi.org/10.1016/j.ijsolstr.2023.112494) using the Real Space, absent in FenicsX, but available in https://github.com/scientificcomputing/scifem.
+- Implementation of non-standard types of boundary conditions: periodic, minimally constraint in FEniCSx using dolfin-mpc (http://jsdokken.com/dolfinx_mpc/README.html) (in legacy FEniCS this was already done).
 - Be the most flexible as possible concerning physics. 
-- Implementation of non-standard types of boundary conditions: periodic, minimally constraint in FEniCSx (in legacy FEniCS this was already done).
 
 ## Installation
 - conda create -n fenicsx-env -c conda-forge fenics-dolfinx mpich pyvista scipy
@@ -15,7 +13,7 @@ Currently, micmacsfenics is going through a complete factorization from the orig
 - pip install gmsh meshio pygmsh
 - conda install spyder-kernels (only if spyder is used as IDE)
 
-Currently, micmacsfenicsx run with the versions: fenics-dolfinx 0.9.0, gmsh 4.13.1, meshio 5.3.5, pygmsh 7.1.17
+Currently, micmacsfenicsx run with the versions: fenics-dolfinx 0.10.0, gmsh, meshio, pygmsh (versions 4.13.1, 5.3.5, 7.1.17, but upgrating them)
 
 ## Citing 
 If this library has been useful for you, please the article in which this library is related with:
