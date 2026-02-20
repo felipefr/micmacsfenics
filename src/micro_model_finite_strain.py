@@ -52,8 +52,6 @@ import ufl
 from mpi4py import MPI
 from petsc4py.PETSc import ScalarType  # type: ignore
 import fetricksx as ft
-import fetricksx.src.mechanics.conversions3d as conv3d
-import fetricksx.src.mechanics.conversions as conv2d  
 
 class MicroModelFiniteStrain:
     
@@ -70,7 +68,7 @@ class MicroModelFiniteStrain:
         self.tdim = self.mesh.topology.dim
         self.tensor_encoding = "unsym"
         
-        self.conv = {2: conv2d, 3: conv3d}[self.tdim]
+        self.conv = {2: ft.conv2d, 3: ft.conv3d}[self.tdim]
         if(self.tensor_encoding == "unsym"):
             self.nstrain = self.tdim*self.tdim
             self.grad = self.conv.grad_unsym
