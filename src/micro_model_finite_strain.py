@@ -47,7 +47,6 @@ import basix
 import numpy as np
 from dolfinx import fem, io
 import dolfinx.fem.petsc
-import dolfinx.nls.petsc
 import ufl
 from mpi4py import MPI
 from petsc4py.PETSc import ScalarType  # type: ignore
@@ -61,12 +60,13 @@ class MicroModelFiniteStrain:
     countTangentCalls = 0
     countStressCalls = 0
 
-    def __init__(self, mesh, psi_mu, bnd_flags, solver_param=None):
+    def __init__(self, mesh, psi_mu, bnd_flags, solver_param=None, customNLsolver = False):
 
         self.mesh = mesh
         self.solver_param = solver_param
         self.tdim = self.mesh.topology.dim
         self.tensor_encoding = "unsym"
+        self.customNLsolver = customNLsolver
         
         self.conv = {2: ft.conv2d, 3: ft.conv3d}[self.tdim]
         if(self.tensor_encoding == "unsym"):
@@ -86,6 +86,8 @@ class MicroModelFiniteStrain:
         self.set_aux_variables()
         self.set_microproblem()
     
+
+        
     def restart_initial_guess(self):
         self.uh.x.array[:] = 0.0
         
@@ -122,9 +124,47 @@ class MicroModelFiniteStrain:
         r = self.flag_nonlinres*self.PKmu + self.flag_linres*ufl.dot( self.Amu, self.Gmacro_kl)
         
         self.Res = ufl.inner(r , self.grad(vh))*dy
-                
-        self.microproblem = ft.CustomNonlinearProblem(self.Res, uh, self.bcD, self.Jac)
-        self.microsolver = ft.CustomNonlinearSolver(self.microproblem)
+        
+        if(self.customNLsolver):        
+            self.microproblem = ft.CustomNonlinearProblem(self.Res, self.uh, self.bcD, self.Jac)
+            self.microsolver = ft.CustomNonlinearSolver(self.microproblem)
+        else:
+            # with line search
+            # petsc_options = {
+            #     "snes_type": "newtonls",
+            #     "snes_linesearch_type": "bt",    # backtracking
+            #     "snes_linesearch_damping": 1.0,
+            #     "snes_linesearch_minlambda": 1e-12,
+            #     "snes_linesearch_rtol": 1e-3,
+            #     "snes_linesearch_max_it": 20,
+            #     "snes_linesearch_norms": True,
+            #     #"snes_monitor": None,
+            #     #"snes_atol": 1e-10,
+            #     "snes_rtol": 1e-8,
+            #     "snes_stol": 0.0,
+            #     "ksp_type": "preonly",
+            #     "pc_type": "lu",
+            #     "pc_factor_mat_solver_type": "mumps"
+            # }
+            
+            petsc_options = {
+                "snes_type": "newtonls",
+                "snes_linesearch_type": "none",
+                "snes_max_it": 10,
+                "snes_monitor_cancel": None,
+                "snes_atol": 1e-10,
+                "snes_rtol": 1e-10,
+                "snes_stol": 1e-10,
+                "ksp_type": "preonly",
+                "pc_type": "lu",
+                "pc_factor_mat_solver_type": "mumps",
+            }
+            
+    
+            self.microsolver = fem.petsc.NonlinearProblem(self.Res, self.uh, 
+                                                          bcs=self.bcD, J = self.Jac,
+                                                          petsc_options = petsc_options, 
+                                                          petsc_options_prefix='microsolver')
     
     def get_stress_tangent(self):
         return self.homogenise_stress(), ft.sym_flatten_3x3_np(self.homogenise_tangent())
